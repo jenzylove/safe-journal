@@ -1,0 +1,49 @@
+{
+  "note": "Synthetic demo data on Arkiv Tiramisu (chain 7738577). No real person or event.",
+  "seededAt": "2026-10-17T23:50:20.303Z",
+  "wallets": [
+    {
+      "role": "project funder: tops up new journal addresses",
+      "address": "0x659C352eBC66BB7EEb582b3BB1Fe7d8b37f3aBc8"
+    },
+    {
+      "role": "demo journal: creator of every demo entry",
+      "address": "0x63FA55b862356C9E6d8E4Fd3a98787cC4E3e9589"
+    },
+    {
+      "role": "forger: writes an entry with identical attributes, ignored by the app",
+      "address": "0x91F65d6ecC68139d681F5815083F2480E307F77f"
+    },
+    {
+      "role": "supporter: extends a demo entry's lifetime",
+      "address": "0x155f34Bf01e300545df50150D8E47BfDa351DA64"
+    }
+  ],
+  "entries": [
+    {
+      "key": "0x7349771437ee9fba3aef2f3fe823453256a27074690d3b080dd0489c17766d25",
+      "tx": "0xd41a11ff94b878cf53c8cdde3b5cd58f086a49f84c31b7c55ca8644bb6d9186b"
+    },
+    {
+      "key": "0x64fd0aa296cfcfe7e178545383656650821ce560db1bf340d7bff7a8902ba925",
+      "tx": "0x103a552e599e1ed69801d721c80196f6e981fa79cecedf6552adc1bb4d8ca6cd"
+    },
+    {
+      "key": "0x513bbc074cbb0af954134d35fd23264a5a527dafdb9ddcabc696693fd40e9eba",
+      "tx": "0x779be618170a468e3de3f583f68a7ca3ca77b25501e2b2e51e8ba6f5ab352611"
+    },
+    {
+      "key": "0x7e5cc307d6a053692a6431ef49d5a1c4fc68ffab9098d82b6d709918bc30e3d2",
+      "tx": "0xcf93937f64b2274681301e72768ccda4697faf050e727a576bf6c5fa35e62005",
+      "photo": "0x5913560e72301c3c0edd0dd0cc3b128b42cef12f8510a3078f2f62daa2e52b90"
+    }
+  ],
+  "forged": {
+    "entityKey": "0xf3097d19736c4452ea7b8a6fa7deca7b5f00a7b5ce329c7f080ab554a4654d58",
+    "txHash": "0x7a105ce9ad7a317c4b5e5152ac17d7df78f095ea644272e89419af52050c901c"
+  },
+  "extension": {
+    "entityKey": "0x7349771437ee9fba3aef2f3fe823453256a27074690d3b080dd0489c17766d25",
+    "txHash": "0xaa819f7f5457042c4d6c39775663034daa3ca1a366f7397f08327460faea2b79"
+  }
+}
