@@ -1,0 +1,42 @@
+{
+  "name": "safe-journal",
+  "version": "1.0.0",
+  "description": "A private journal for documenting abuse. Nothing stays on the phone, every entry's time is proven by Arkiv, entries can't be deleted, and the record outlives the app.",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "dev": "vite",
+    "build": "vite build",
+    "build:reader": "vite build --config vite.reader.config.ts",
+    "typecheck": "tsc --noEmit",
+    "e2e": "playwright test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jenzylove/safe-journal.git"
+  },
+  "keywords": [],
+  "author": "jenzylove",
+  "license": "MIT",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/jenzylove/safe-journal/issues"
+  },
+  "homepage": "https://github.com/jenzylove/safe-journal#readme",
+  "dependencies": {
+    "@arkiv-network/sdk": "^0.8.1",
+    "viem": "^2.57.7"
+  },
+  "devDependencies": {
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
+    "@playwright/test": "^1.64.1",
+    "hash-wasm": "^4.12.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vite-plugin-singlefile": "^2.3.4",
+    "vitest": "^5.0.5"
+  }
+}

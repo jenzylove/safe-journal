@@ -11,3 +11,6 @@ build/
 wallets/
 .DS_Store
 coverage/
+dist-reader/
+test-results/
+playwright-report/
