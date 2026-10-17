@@ -1,0 +1,14 @@
+sample event {"type":"EntityCreated","blockNumber":"715378","transactionHash":"0x8f614b1580f971f7c4a68973b8355a985a547ec432e65a719a327c6716a63453","logIndex":0,"entityKey":"0xe625dc0e1ec3c08dff87c4833c43b8fca3f9a05c7b989d07c19d1b16bc7bd5d4","owner":"0x679B5Ab1cd4B488D73025d0D72d4017Fa2d97B59","expiresAt":"716278","creationFlags":{"readonly":false,"permissionlessExtension":false,"raw":0}}
+sample event {"type":"EntityDeleted","blockNumber":"715378","transactionHash":"0x25cfdd0f1b67986451d7da0d92461f1296c8946c8c0a7e77f2c9d8d17684345e","logIndex":1,"entityKey":"0x7c17c56ab40884fa700bc3c313a67017106ef3df7ab3c19aa7f148b03de2a91a","owner":"0x6CB41094b6AE370454C2c34Cf91Cf02e768A5E22"}
+OUR create event after 5237 ms [
+  'type',
+  'blockNumber',
+  'transactionHash',
+  'logIndex',
+  'entityKey',
+  'owner',
+  'expiresAt',
+  'creationFlags'
+]
+write returned after 7824 ms 0xd3f30adcb4ab0a3a1de5d482ec46377893e44a44d451224460ee6eb8f7812d81 0xe1bbd02f32e7097116c6a0136cd47a4561ab2f67f546aac6472870338418ee44
+events seen in 25841 ms: 31 ours: true

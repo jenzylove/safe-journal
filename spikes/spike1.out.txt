@@ -1,0 +1,107 @@
+23:39:29 A 0x659C352eBC66BB7EEb582b3BB1Fe7d8b37f3aBc8 balance 5 GLM
+23:39:29 predictEntityKeys on wallet? undefined on public? function
+23:39:37 OK   batch create entry+photo, ownership -> burn, 5y, permissionless {
+  txHash: '0x1d1709cc45869eb366ed01719a095dd9f308daa2a39a25f147339e997f644c9b',
+  createdEntities: [
+    '0x2a8a927c0d2bb815a1916b640f419b23ff2a7cf50ac2e8b435c679c1ac732791',
+    '0x30c44e8bfc8f7f063bfbbc862964e726a2883c2c82b6432d7a411134d42b3da5'
+  ],
+  patchedEntities: [],
+  deletedEntities: [],
+  extendedEntities: [],
+  ownershipChanges: [
+    '0x2a8a927c0d2bb815a1916b640f419b23ff2a7cf50ac2e8b435c679c1ac732791',
+    '0x30c44e8bfc8f7f063bfbbc862964e726a2883c2c82b6432d7a411134d42b3da5'
+  ],
+  receipt: {
+    status: 'success',
+    gasUsed: 745150n,
+    cost: '0.0007451500014903 GLM',
+    block: 715313n
+  },
+  predictedMatch: true
+}
+23:39:38 entry read back {
+  owner: '0x000000000000000000000000000000000000dEaD',
+  creator: '0x659C352eBC66BB7EEb582b3BB1Fe7d8b37f3aBc8',
+  createdAt: 715313n,
+  expiresAt: 79555313n,
+  flags: { readonly: false, permissionlessExtension: true, raw: 2 }
+}
+23:39:39 FAIL delete from creator (expect revert) :: Transaction failed: entity 0x2a8a927c…732791 is owned by 0x000000000000000000000000000000000000dEaD, not 0x659C352eBC66BB7EEb582b3BB1Fe7d8b37f3aBc8
+23:39:40 FAIL patch from creator (expect revert) :: Transaction failed: entity 0x2a8a927c…732791 is owned by 0x000000000000000000000000000000000000dEaD, not 0x659C352eBC66BB7EEb582b3BB1Fe7d8b37f3aBc8
+23:39:46 OK   fund B 0.01 GLM {
+  status: 'success',
+  gasUsed: 21000n,
+  cost: '0.000021000000042 GLM',
+  block: 715317n
+}
+23:39:54 OK   B extends entry (permissionless, expect OK) {
+  status: 'success',
+  gasUsed: 25270n,
+  cost: '0.00002527000005054 GLM',
+  block: 715321n
+}
+23:39:55 entry expiresAt after B 95323321n
+23:40:01 OK   B forges entry with identical attributes {
+  status: 'success',
+  gasUsed: 96408n,
+  cost: '0.000096408000192816 GLM',
+  block: 715325n
+}
+23:40:01 B address 0x1e7522e08C160d70a287A17f4dDCE6c8aC181092
+23:40:01 OK   query createdBy(A) app+kind=entry 1
+23:40:02 OK   query any creator app+kind=entry [
+  '0x1e7522e08C160d70a287A17f4dDCE6c8aC181092',
+  '0x659C352eBC66BB7EEb582b3BB1Fe7d8b37f3aBc8'
+]
+23:40:08 OK   single create 20 KB {
+  status: 'success',
+  gasUsed: 855240n,
+  cost: '0.00085524000171048 GLM',
+  block: 715328n
+}
+23:40:15 OK   single create 40 KB {
+  status: 'success',
+  gasUsed: 1671320n,
+  cost: '0.00167132000334264 GLM',
+  block: 715332n
+}
+23:40:22 OK   single create 64 KB {
+  status: 'success',
+  gasUsed: 2651810n,
+  cost: '0.00265181000530362 GLM',
+  block: 715335n
+}
+23:40:29 OK   single create 100 KB {
+  status: 'success',
+  gasUsed: 4122020n,
+  cost: '0.00412202000824404 GLM',
+  block: 715339n
+}
+23:40:33 FAIL single create 127 KB :: Transaction failed: Execution error without revert data
+23:40:40 OK   batch of 2 x 10 KB {
+  status: 'success',
+  gasUsed: 871280n,
+  cost: '0.00087128000174256 GLM',
+  block: 715344n
+}
+23:40:47 OK   batch of 2 x 20 KB {
+  status: 'success',
+  gasUsed: 1687990n,
+  cost: '0.00168799000337598 GLM',
+  block: 715348n
+}
+23:40:55 OK   batch of 2 x 30 KB {
+  status: 'success',
+  gasUsed: 2505240n,
+  cost: '0.00250524000501048 GLM',
+  block: 715352n
+}
+23:41:02 OK   permanent expiry accepted {
+  status: 'success',
+  gasUsed: 95896n,
+  cost: '0.000095896000191792 GLM',
+  block: 715355n
+}
+23:41:02 A balance end 4.974773053969546108 GLM
