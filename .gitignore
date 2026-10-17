@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+build/
+.next/
+.vercel/
+*.key
+*keypair*.json
+wallets/
+.DS_Store
+coverage/
