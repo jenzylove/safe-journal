@@ -1,0 +1,174 @@
+// The Arkiv layer. Every entry is written as one atomic batch: the entry (and its photo, if any)
+// is created with permissionless extension and the person's chosen lifetime, and in the same
+// transaction its ownership is handed to a burn address, so no one can delete or change it.
+// Reads always go through createdBy(journal address): trust comes from $creator, never from an
+// attribute anyone can write.
+import { createPublicClient, createWalletClient, ENTITY_EVENTS_ABI, ExpirationTime } from "@arkiv-network/sdk";
+import { tiramisu } from "@arkiv-network/sdk/chains";
+import { eq } from "@arkiv-network/sdk/query";
+import { http, webSocket, type Hex, getAbiItem } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { sealEntry, openEntry, seal, open, aad, sha256Hex, type EntryV1 } from "../lib/entry";
+
+export const RPC_HTTP = "https://rpc.tiramisu.db-chain.testnet.arkiv.network";
+export const RPC_WS = "wss://rpc.tiramisu.db-chain.testnet.arkiv.network";
+export const EXPLORER = "https://tiramisu.explorer.arkiv.network";
+export const BURN: Hex = "0x000000000000000000000000000000000000dEaD";
+export const APP = "safejournal";
+export const LIFETIMES = [1, 2, 5] as const;
+export type LifetimeYears = (typeof LIFETIMES)[number];
+/** Largest encrypted photo we put in one batch. 60 KB batches were proven on Tiramisu. */
+export const MAX_PHOTO_BYTES = 50_000;
+const READ_TIMEOUT_MS = 20_000;
+
+export class ArkivUnavailable extends Error {
+  constructor(what: string) { super(`Arkiv is not answering right now (${what}). Nothing was lost; try again in a minute.`); }
+}
+
+async function withTimeout<T>(p: Promise<T>, what: string, ms = READ_TIMEOUT_MS): Promise<T> {
+  let t: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([p, new Promise<never>((_, rej) => { t = setTimeout(() => rej(new ArkivUnavailable(what)), ms); })]);
+  } finally { clearTimeout(t); }
+}
+
+export const publicClient = createPublicClient({ chain: tiramisu, transport: http(RPC_HTTP) });
+
+let wsClient: ReturnType<typeof createPublicClient> | undefined;
+function ws() { return (wsClient ??= createPublicClient({ chain: tiramisu, transport: webSocket(RPC_WS) })); }
+
+export function walletFor(signingKey: Hex) {
+  return createWalletClient({ chain: tiramisu, transport: http(RPC_HTTP), account: privateKeyToAccount(signingKey) });
+}
+
+export type WriteResult = { entityKey: Hex; photoKey?: Hex; txHash: Hex };
+
+/** Serialises writes from this tab: predicted keys depend on the account nonce. */
+let writing: Promise<unknown> = Promise.resolve();
+
+export function writeEntry(signingKey: Hex, contentKey: CryptoKey, entry: Omit<EntryV1, "photo">, lifetime: LifetimeYears, photo?: { bytes: Uint8Array; mime: string }): Promise<WriteResult> {
+  const run = writing.then(() => doWrite(signingKey, contentKey, entry, lifetime, photo));
+  writing = run.catch(() => undefined);
+  return run;
+}
+
+async function doWrite(signingKey: Hex, contentKey: CryptoKey, entry: Omit<EntryV1, "photo">, lifetime: LifetimeYears, photo?: { bytes: Uint8Array; mime: string }): Promise<WriteResult> {
+  if (!LIFETIMES.includes(lifetime)) throw new Error("lifetime must be 1, 2 or 5 years");
+  const wallet = walletFor(signingKey);
+  const owner = wallet.account.address;
+  const count = photo ? 2 : 1;
+  const predicted = (await withTimeout(publicClient.predictEntityKeys({ owner, count }), "predicting keys")) as { key: Hex; salt: bigint }[];
+  const entryKey = predicted[0]!;
+  const photoKey = predicted[1];
+  const expires = ExpirationTime.fromYears(lifetime);
+  const flags = { permissionlessExtension: true };
+
+  const creates = [];
+  let full: EntryV1 = { ...entry };
+  if (photo && photoKey) {
+    const sealedPhoto = await seal(contentKey, photo.bytes, aad("photo", photoKey.key, 0), false);
+    if (sealedPhoto.length > MAX_PHOTO_BYTES + 64) throw new Error("photo too large after compression");
+    full = { ...full, photo: { mime: photo.mime, size: photo.bytes.length, sha256: await sha256Hex(photo.bytes), parts: [photoKey.key] } };
+    creates.push({ payload: sealedPhoto, contentType: "application/octet-stream" as const, attributes: { app: APP, kind: "photo", v: 1, part: 0, of: 1 }, expires, flags, salt: photoKey.salt });
+  }
+  const sealedEntry = await sealEntry(contentKey, full, entryKey.key);
+  creates.unshift({ payload: sealedEntry, contentType: "application/octet-stream" as const, attributes: { app: APP, kind: "entry", v: 1 }, expires, flags, salt: entryKey.salt });
+  const keys = photo && photoKey ? [entryKey.key, photoKey.key] : [entryKey.key];
+
+  const r = await wallet.executeBatch({ creates, ownershipChanges: keys.map((entityKey) => ({ entityKey, newOwner: BURN })) });
+  if (r.createdEntities[0]?.toLowerCase() !== entryKey.key.toLowerCase()) {
+    // Another write from this key landed first and moved the nonce, so the ciphertext is bound to
+    // the wrong key. Surface it rather than pretend it worked.
+    throw new Error("entry key moved during write; please write the entry again");
+  }
+  await publicClient.waitForTransactionReceipt({ hash: r.txHash });
+  return { entityKey: entryKey.key, photoKey: photoKey?.key, txHash: r.txHash };
+}
+
+export type JournalItem = {
+  key: Hex;
+  entry: EntryV1 | null;
+  /** Set when the payload could not be opened with this key. */
+  unreadable?: true;
+  creator: Hex;
+  owner: Hex;
+  createdAtBlock: bigint;
+  expiresAtBlock: bigint;
+  permissionlessExtension: boolean;
+};
+
+const SELECT = { key: true, creator: true, owner: true, createdAt: true, expiresAt: true, creationFlags: true, payload: true } as const;
+
+/** Every entry written by this journal address, decrypted, oldest first. */
+export async function listEntries(address: Hex, contentKey: CryptoKey | null): Promise<JournalItem[]> {
+  const out: JournalItem[] = [];
+  let page = await withTimeout(publicClient.select(SELECT).where([eq("app", APP), eq("kind", "entry")]).createdBy(address).limit(100).fetch(), "reading the journal");
+  for (;;) {
+    for (const e of page.entities) out.push(await toItem(e, contentKey));
+    if (!page.hasNextPage()) break;
+    page = await withTimeout(page.next(), "reading the next page");
+  }
+  return out.sort((a, b) => (a.createdAtBlock < b.createdAtBlock ? -1 : a.createdAtBlock > b.createdAtBlock ? 1 : 0));
+}
+
+type Selected = { key: Hex; creator: Hex; owner: Hex; createdAt: bigint; expiresAt: bigint; creationFlags: { permissionlessExtension: boolean }; payload: Uint8Array };
+
+async function toItem(e: Selected, contentKey: CryptoKey | null): Promise<JournalItem> {
+  let entry: EntryV1 | null = null;
+  let unreadable: true | undefined;
+  if (contentKey) {
+    try { entry = await openEntry(contentKey, e.payload, e.key); } catch { unreadable = true; }
+  }
+  return { key: e.key, entry, unreadable, creator: e.creator, owner: e.owner, createdAtBlock: e.createdAt, expiresAtBlock: e.expiresAt, permissionlessExtension: e.creationFlags.permissionlessExtension };
+}
+
+/** How many entries carry our attributes but were written by some other wallet. */
+export async function countForeignEntries(address: Hex): Promise<number> {
+  const page = await withTimeout(publicClient.select({ creator: true }).where([eq("app", APP), eq("kind", "entry")]).limit(200).fetch(), "counting other entries");
+  return page.entities.filter((e) => e.creator.toLowerCase() !== address.toLowerCase()).length;
+}
+
+export async function loadPhoto(contentKey: CryptoKey, photoKey: Hex, mime: string): Promise<Blob> {
+  const e = await withTimeout(publicClient.getEntity(photoKey), "loading the photo");
+  const bytes = await open(contentKey, e.payload as Uint8Array, aad("photo", photoKey, 0), false);
+  return new Blob([bytes as Uint8Array<ArrayBuffer>], { type: mime });
+}
+
+const blockTimes = new Map<bigint, Date>();
+export async function blockTime(block: bigint): Promise<Date> {
+  const hit = blockTimes.get(block);
+  if (hit) return hit;
+  const b = await withTimeout(publicClient.getBlock({ blockNumber: block }), "reading block time");
+  const d = new Date(Number(b.timestamp) * 1000);
+  blockTimes.set(block, d);
+  return d;
+}
+
+const createdEvent = getAbiItem({ abi: ENTITY_EVENTS_ABI, name: "EntityCreated" });
+/** Entities do not carry their creating transaction; find it from the EntityCreated log at that block. */
+export async function creationTx(entityKey: Hex, block: bigint): Promise<Hex | null> {
+  const logs = (await withTimeout(publicClient.getLogs({ event: createdEvent as never, args: { entityKey } as never, fromBlock: block, toBlock: block }), "finding the creating transaction")) as unknown as { transactionHash: Hex }[];
+  return logs[0]?.transactionHash ?? null;
+}
+
+/** Live: calls back with each new entry this journal writes. Filters chain-wide events by owner locally. */
+export function watchJournal(address: Hex, onNew: (key: Hex) => void, onError?: (e: Error) => void): () => void {
+  const me = address.toLowerCase();
+  return ws().watchEntityEvents({
+    onEntityCreated: (e) => { if (e.owner.toLowerCase() === me) onNew(e.entityKey); },
+    onError: (e) => onError?.(e),
+  });
+}
+
+export async function getOne(key: Hex, contentKey: CryptoKey | null): Promise<JournalItem> {
+  const e = await withTimeout(publicClient.getEntity(key), "reading the entry");
+  return toItem({ key, creator: e.creator as Hex, owner: e.owner as Hex, createdAt: e.createdAt as bigint, expiresAt: e.expiresAt as bigint, creationFlags: e.creationFlags as { permissionlessExtension: boolean }, payload: e.payload as Uint8Array }, contentKey);
+}
+
+export async function balanceOf(address: Hex): Promise<bigint> {
+  return withTimeout(publicClient.getBalance({ address }), "reading the balance");
+}
+
+export const explorerEntity = (key: Hex) => `${EXPLORER}/entity/${key}`;
+export const explorerTx = (tx: Hex) => `${EXPLORER}/tx/${tx}`;
+export const explorerAddress = (a: Hex) => `${EXPLORER}/address/${a}`;
