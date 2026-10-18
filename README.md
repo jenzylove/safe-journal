@@ -31,6 +31,7 @@ Everyone who supports people living with abuse gives the same advice: write down
 | Watch the demo (under 3 minutes) | *link added at submission* |
 | The data contract: entities, attributes, lifetimes, queries | [arkiv/schema.md](arkiv/schema.md) |
 | Reproduce it from a terminal | `npm install && node scripts/verify.mjs` |
+| The same app on a second, independent host (GitHub Pages, no server of ours) | [jenzylove.github.io/safe-journal](https://jenzylove.github.io/safe-journal/) |
 | Read a journal with no website at all | [reader/safe-journal-reader.html](reader/safe-journal-reader.html) |
 | Friction report | [arkiv/friction.md](arkiv/friction.md) |
 | Build log, spikes, PRD | [docs/](docs/) |
@@ -49,7 +50,7 @@ About one in three women worldwide has experienced physical or sexual violence, 
 
 **Security.** *Who is misled today:* a court or an advocate told "she wrote all this afterwards", or shown a planted message under her name ("I made all of this up"). *What changes on day one:* every entry's time is the Arkiv block it was created in, every read trusts only `createdBy(journal)`, and anything carrying her journal's label but written by another wallet is shown as rejected, live, in the lawyer view.
 
-**Censorship Resistance.** *Who is cut off today:* survivors whose evidence app shuts down or is taken offline; one shut down in 2023 and told its users to move their data out themselves. *What changes on day one:* the journal is read straight from an Arkiv node by a one file reader that can point at any node; no server of ours is needed to read, and anyone can fund a journal from the public faucet if our funding endpoint is gone.
+**Censorship Resistance.** *Who is cut off today:* survivors whose evidence app shuts down or is taken offline; one shut down in 2023 and told its users to move their data out themselves. *What changes on day one:* the journal is read straight from an Arkiv node. The same app also runs as a mirror on GitHub Pages, which opens the demo journal contacting only github.io and the Arkiv node, and a one file reader can point at any node. No server of ours is needed to read, and anyone can fund a journal from the public faucet if our funding endpoint is gone.
 
 ## How it works
 
