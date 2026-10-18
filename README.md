@@ -11,7 +11,7 @@
   <a href="https://safe-journal-seven.vercel.app/#/proof"><img alt="Proof, live from Arkiv" src="https://img.shields.io/badge/proof-live%20on%20Arkiv%20Tiramisu-8A2E24?style=flat-square&labelColor=1E2A28"></a>
   <a href="https://github.com/jenzylove/safe-journal/actions/workflows/ci.yml"><img alt="Tests" src="https://github.com/jenzylove/safe-journal/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Built for Arkiv Global Tour Stop" src="https://img.shields.io/badge/built%20for-Arkiv%20Global%20Tour%20Stop-23463E?style=flat-square&labelColor=1E2A28">
-  <img alt="Tracks" src="https://img.shields.io/badge/tracks-Privacy%20%C2%B7%20Security%20%C2%B7%20Censorship%20Resistance-5B6461?style=flat-square&labelColor=1E2A28">
+  <img alt="Tracks" src="https://img.shields.io/badge/tracks-Privacy%20%C2%B7%20Security%20%C2%B7%20Censorship%20Resistance%20%C2%B7%20Open%20Source-5B6461?style=flat-square&labelColor=1E2A28">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-5B6461?style=flat-square&labelColor=1E2A28">
 </p>
 
@@ -44,13 +44,15 @@ About one in three women worldwide has experienced physical or sexual violence, 
 - **The dates get doubted.** "You wrote all of this afterwards." A note's date is whatever the phone says, and an app's timestamp is that company's word.
 - **The evidence lives with someone else.** Apps built for this keep it on their own servers. When one of them shut down in 2023, its users were told to move their evidence out themselves.
 
-## Why these three pillars
+## Why these four pillars
 
 **Privacy.** *Who is exposed today:* a person whose partner checks her phone, and whose evidence otherwise sits in a notes app, a gallery, or an operator's servers. *What changes on day one:* nothing about the journal is on her phone; Arkiv shows four labels and ciphertext, never her words, photos, names or the times she gave; each entry lives for the lifetime she picks; a link opens only the entries she chooses. What the public record does reveal (that an address writes entries, and when) is set out in the [threat model](SECURITY.md#threat-model).
 
 **Security.** *Who is misled today:* a court or an advocate told "she wrote all this afterwards", or shown a planted message under her name ("I made all of this up"). *What changes on day one:* every entry's time is the Arkiv block it was created in, every read trusts only `createdBy(journal)`, and anything carrying her journal's label but written by another wallet is shown as rejected, live, in the lawyer view.
 
 **Censorship Resistance.** *Who is cut off today:* survivors whose evidence app shuts down or is taken offline; one shut down in 2023 and told its users to move their data out themselves. *What changes on day one:* the journal is read straight from an Arkiv node. The same app also runs as a mirror on GitHub Pages, which opens the demo journal contacting only github.io and the Arkiv node, and a one file reader can point at any node. No server of ours is needed to read, and anyone can fund a journal from the public faucet if our funding endpoint is gone.
+
+**Open Source.** *Who needs it open:* evidence is only trusted if anyone can check how it was made. A survivor, a lawyer, a court or an advocacy group should be able to verify the format, the encryption and the proofs without trusting us. *What changes on day one:* the code is MIT; [arkiv/schema.md](arkiv/schema.md) documents the entity types, the four public labels, lifetimes, the exact queries, the key derivation and the payload and share link formats, so anyone can write their own reader or court export; the [one file reader](reader/safe-journal-reader.html) opens any journal from any Arkiv node; and `scripts/verify.mjs` reproduces every claim from a terminal with the same queries the app runs.
 
 ## How it works
 

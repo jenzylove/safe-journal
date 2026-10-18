@@ -52,7 +52,7 @@ export function renderProof(app: HTMLElement): () => void {
         const body = payload.length - (1 + 12 + 48) - (1 + 12 + 16);
         const padded = [1024, 2048, 4096, 8192, 16384, 32768, 65536].includes(body);
         const ok = names.every((n) => allowed.includes(n)) && payload[0] === 2 && padded;
-        return { ok, detail: `Public labels: ${names.join(", ")}. Contents: ${payload.length} bytes of ciphertext padded to ${body} bytes`, links: [["open on explorer", explorerEntity(first)]] };
+        return { ok, detail: `Public labels: ${names.join(", ")}. Contents: ${payload.length} bytes of ciphertext. The text was padded to ${body} bytes before encryption, so its length gives nothing away`, links: [["open on explorer", explorerEntity(first)]] };
       },
     },
     {

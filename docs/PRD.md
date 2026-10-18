@@ -1,7 +1,7 @@
 # Safe Journal: PRD
 
 Arkiv Global Tour Stop, 9 to 18 October 2026. Submission closes **18 October 2026, 22:59 UTC**.
-Tracks: **Privacy** (lead), **Security**, **Censorship Resistance**.
+Tracks: **Privacy** (lead), **Security**, **Censorship Resistance**, **Open Source**.
 
 ## 1. Problem
 
@@ -117,7 +117,7 @@ Becomes `docs/SUBMISSION_CHECKLIST.md`, ticked only from the live app.
 - [ ] `/arkiv/friction.md`
 - [ ] Demo video, 3 minutes or less
 - [ ] Every required Devfolio question answered (18; see the rules checklist)
-- [ ] Tracks chosen on Devfolio: Privacy, Security, Censorship Resistance
+- [ ] Tracks chosen on Devfolio: Privacy, Security, Censorship Resistance, Open Source
 - [ ] Built 9 to 18 October; pre-existing work: none
 - [ ] Evidence survives expiry: creation transactions linked, video shows them
 - [ ] No private keys, secrets or real personal data in any entity (synthetic only)
