@@ -58,3 +58,8 @@ export const CATEGORY_LABELS: Record<string, string> = {
   digital: "Phone, messages or online",
   other: "Something else",
 };
+
+/** Navigate without adding a history entry, so Back never walks through the journal's screens. */
+export function go(hash: string): void {
+  location.replace(hash.startsWith("#") ? hash : `#${hash}`);
+}

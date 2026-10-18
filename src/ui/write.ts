@@ -1,7 +1,7 @@
 import { balanceOf, blockTime, getOne, LIFETIMES, writeEntry, type LifetimeYears } from "../arkiv/journal";
 import { CATEGORIES, type Category } from "../lib";
 import { getSession } from "../session";
-import { CATEGORY_LABELS, errText, fmtTime, h } from "./dom";
+import { CATEGORY_LABELS, errText, fmtTime, h, go } from "./dom";
 import { preparePhoto } from "./photo";
 
 const MIN_BALANCE = 2_000_000_000_000_000n; // 0.002 GLM
@@ -18,7 +18,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export function renderWrite(app: HTMLElement): () => void {
   const s = getSession();
   if (!s) {
-    location.hash = "#/";
+    go("#/");
     return () => {};
   }
 

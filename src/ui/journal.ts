@@ -1,13 +1,13 @@
 import type { Hex } from "viem";
 import { getOne, listEntries, publicClient, watchJournal, type JournalItem } from "../arkiv/journal";
 import { clearSession, getSession } from "../session";
-import { errText, h } from "./dom";
+import { errText, h, go } from "./dom";
 import { releasePhotos, renderEntry } from "./entry-view";
 
 export function renderJournal(app: HTMLElement): () => void {
   const s = getSession();
   if (!s) {
-    location.hash = "#/";
+    go("#/");
     return () => {};
   }
   let stopped = false;
@@ -22,7 +22,7 @@ export function renderJournal(app: HTMLElement): () => void {
   const close = h("button", { type: "button" }, "Close journal");
   close.addEventListener("click", () => {
     clearSession();
-    location.hash = "#/";
+    go("#/");
   });
 
   app.replaceChildren(

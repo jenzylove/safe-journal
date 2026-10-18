@@ -1,6 +1,7 @@
 import { checkPassphrase, deriveKeys, generatePassphrase } from "../lib";
+import { listEntries } from "../arkiv/journal";
 import { setSession } from "../session";
-import { errText, h } from "./dom";
+import { errText, h, go } from "./dom";
 
 export function renderOpen(app: HTMLElement): () => void {
   const input = h("input", {
@@ -73,9 +74,19 @@ export function renderOpen(app: HTMLElement): () => void {
     status.textContent = "Opening...";
     try {
       const k = await deriveKeys(input.value);
+      if (!checkPassphrase(input.value).ok) {
+        // A weak passphrase may open an existing journal, but never start a new one: the
+        // ciphertext is public forever, so a guessable passphrase would expose everything.
+        status.textContent = "Checking for an existing journal...";
+        const existing = await listEntries(k.address, null);
+        if (!existing.length) {
+          k.contentKeyRaw.fill(0);
+          throw new Error("No journal uses this passphrase yet, and it is too easy to guess to start one. Tap Generate for a strong one.");
+        }
+      }
       setSession({ address: k.address, signingKey: k.signingKey, contentKey: k.contentKey, contentKeyRaw: k.contentKeyRaw });
       input.value = "";
-      location.hash = "#/journal";
+      go("#/journal");
     } catch (err) {
       status.className = "error";
       status.textContent = errText(err);

@@ -2,7 +2,7 @@
 // Writes the entries with the app's own code path, then adds the two pieces of evidence the proof
 // page shows: a forged entry with identical attributes from another wallet (ignored by the app)
 // and a Lifetime Extension sent by a third wallet (allowed by the permissionless flag).
-// Run: npx tsx scripts/seed-demo.ts   (ARKIV_PRIVATE_KEY in .env funds the demo wallets)
+// Run: npx tsx scripts/seed-demo.ts   (ARKIV_PRIVATE_KEY funds the demo wallets; DEMO_PASSPHRASE in .env)
 import { readFileSync, writeFileSync } from "node:fs";
 import { deflateSync } from "node:zlib";
 import { parseEther, type Hex } from "viem";
@@ -10,10 +10,12 @@ import { generatePrivateKey } from "viem/accounts";
 import { ExpirationTime } from "@arkiv-network/sdk";
 import { deriveKeys } from "../src/lib";
 import { walletFor, writeEntry, publicClient, listEntries, APP } from "../src/arkiv/journal";
-import { DEMO_PASSPHRASE } from "../src/demo";
 
 const env = Object.fromEntries(readFileSync(".env", "utf8").split(/\r?\n/).filter(Boolean).map((l) => l.split(/=(.*)/s).slice(0, 2)));
 const funder = walletFor(env.ARKIV_PRIVATE_KEY as Hex);
+// The demo passphrase lives only in .env: the site publishes a read-only link, so nobody can write as the demo journal.
+const DEMO_PASSPHRASE = env.DEMO_PASSPHRASE!;
+if (!DEMO_PASSPHRASE) throw new Error("DEMO_PASSPHRASE missing from .env");
 const log = (...a: unknown[]) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
 async function fund(to: Hex, amount: string) {
@@ -91,6 +93,14 @@ async function main() {
   };
   writeFileSync("arkiv/evidence.json", JSON.stringify(evidence, null, 2) + "\n");
   log("wrote arkiv/evidence.json");
+  writeFileSync(
+    "src/demo.ts",
+    "// The public demo journal (synthetic). Only its read-only link is published: the address and the\n" +
+      "// content key. Its passphrase, and so its signing key, stays private, so nobody can write as it.\n" +
+      `export const DEMO_ADDRESS = "${keys.address}";\n` +
+      `export const DEMO_CONTENT_KEY = "${Buffer.from(keys.contentKeyRaw).toString("base64url")}";\n`,
+  );
+  log("wrote src/demo.ts");
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

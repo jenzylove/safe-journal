@@ -1,3 +1,4 @@
+import { go } from "./ui/dom";
 import "@fontsource/newsreader/latin-500.css";
 import "@fontsource/newsreader/latin-600.css";
 import "@fontsource/newsreader/latin-400-italic.css";
@@ -55,7 +56,7 @@ function render(): void {
   const path = location.hash.split("?")[0] ?? "";
   const route = routes[path];
   if (!route) {
-    location.hash = "#/";
+    go("#/");
     return;
   }
   cleanup();
@@ -73,6 +74,13 @@ function render(): void {
 }
 
 window.addEventListener("hashchange", render);
+// Hash links navigate in place too, so the back button holds at most one entry for this site.
+document.addEventListener("click", (e) => {
+  const a = (e.target as Element | null)?.closest?.("a[href^='#']");
+  if (!a) return;
+  e.preventDefault();
+  go(a.getAttribute("href")!);
+});
 mountLeaveNow();
-if (!location.hash) location.hash = "#/";
+if (!location.hash) go("#/");
 render();

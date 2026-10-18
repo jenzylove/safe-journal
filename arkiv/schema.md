@@ -11,9 +11,9 @@ A journal is an address derived in the browser from the person's passphrase (sec
 | Role | Address |
 |---|---|
 | Project funder: tops up new journal addresses with test GLM | `0x659C352eBC66BB7EEb582b3BB1Fe7d8b37f3aBc8` |
-| Demo journal: creator of every demo entry (synthetic) | `0x63FA55b862356C9E6d8E4Fd3a98787cC4E3e9589` |
-| Forger: writes an entry with identical attributes, ignored by the app | `0x91F65d6ecC68139d681F5815083F2480E307F77f` |
-| Supporter: extends a demo entry's lifetime | `0x155f34Bf01e300545df50150D8E47BfDa351DA64` |
+| Demo journal: creator of every demo entry (synthetic) | `0x10cf3519F2A71243B3C3091FF97c18a1e32bc8b2` |
+| Forger: writes an entry with identical attributes, ignored by the app | `0xFa21E9e5255538f6C4B1828b4125515052d0994b` |
+| Supporter: extends a demo entry's lifetime | `0x5f82847C4ae11CAd62939Cd67A2236B0300DB4C9` |
 
 Real journals are created by each person's own derived address; we do not know or list them.
 
@@ -85,7 +85,7 @@ git clone https://github.com/jenzylove/safe-journal && cd safe-journal && npm in
 node scripts/verify.mjs
 ```
 
-Expected output (abridged): four entries for `0x63FA55b862356C9E6d8E4Fd3a98787cC4E3e9589`, each "owner burn address (cannot be deleted), permissionless extension true", the first with a 3.0 year lifetime (extended by the supporter wallet), and "Same labels, other creators: N (the forged demo entry 0xf3097d19… is among them: true)".
+Expected output (abridged): four entries for `0x10cf3519F2A71243B3C3091FF97c18a1e32bc8b2`, each "owner burn address (cannot be deleted), permissionless extension true", the first with a 3.0 year lifetime (extended by the supporter wallet), and "Same labels, other creators: N (the forged demo entry 0x85a5ac96… is among them: true)".
 
 ## Keys (how to build your own reader)
 

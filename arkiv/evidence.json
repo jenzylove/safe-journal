@@ -1,6 +1,6 @@
 {
   "note": "Synthetic demo data on Arkiv Tiramisu (chain 7738577). No real person or event.",
-  "seededAt": "2026-10-17T23:50:20.303Z",
+  "seededAt": "2026-10-18T06:30:44.643Z",
   "wallets": [
     {
       "role": "project funder: tops up new journal addresses",
@@ -8,42 +8,42 @@
     },
     {
       "role": "demo journal: creator of every demo entry",
-      "address": "0x63FA55b862356C9E6d8E4Fd3a98787cC4E3e9589"
+      "address": "0x10cf3519F2A71243B3C3091FF97c18a1e32bc8b2"
     },
     {
       "role": "forger: writes an entry with identical attributes, ignored by the app",
-      "address": "0x91F65d6ecC68139d681F5815083F2480E307F77f"
+      "address": "0xFa21E9e5255538f6C4B1828b4125515052d0994b"
     },
     {
       "role": "supporter: extends a demo entry's lifetime",
-      "address": "0x155f34Bf01e300545df50150D8E47BfDa351DA64"
+      "address": "0x5f82847C4ae11CAd62939Cd67A2236B0300DB4C9"
     }
   ],
   "entries": [
     {
-      "key": "0x7349771437ee9fba3aef2f3fe823453256a27074690d3b080dd0489c17766d25",
-      "tx": "0xd41a11ff94b878cf53c8cdde3b5cd58f086a49f84c31b7c55ca8644bb6d9186b"
+      "key": "0x632dfd74e47a1cca1091789b244780d0504d563beba21f9355ca021eddc826f1",
+      "tx": "0x3e0c23793f1ce1c95aa399f3f42f8a27537f137cb052721149f24ba41e9d5c10"
     },
     {
-      "key": "0x64fd0aa296cfcfe7e178545383656650821ce560db1bf340d7bff7a8902ba925",
-      "tx": "0x103a552e599e1ed69801d721c80196f6e981fa79cecedf6552adc1bb4d8ca6cd"
+      "key": "0x1d45b0de7311392d6b291106ba2863e3904ba927675614b2a96bdd480c094043",
+      "tx": "0xb0f6ace7d5f6631af2ae001922a207254080472fdf62c48e5470be7f39cb91d9"
     },
     {
-      "key": "0x513bbc074cbb0af954134d35fd23264a5a527dafdb9ddcabc696693fd40e9eba",
-      "tx": "0x779be618170a468e3de3f583f68a7ca3ca77b25501e2b2e51e8ba6f5ab352611"
+      "key": "0x363380cfae1fb47bc4f9c0e56ef8582d8fbf0e87ed2007a5307749ed4095dd49",
+      "tx": "0xb82116d0b0d680b3a178d8ffd864bc10c5447c9c51ec9c0da8af361edc4a3c46"
     },
     {
-      "key": "0x7e5cc307d6a053692a6431ef49d5a1c4fc68ffab9098d82b6d709918bc30e3d2",
-      "tx": "0xcf93937f64b2274681301e72768ccda4697faf050e727a576bf6c5fa35e62005",
-      "photo": "0x5913560e72301c3c0edd0dd0cc3b128b42cef12f8510a3078f2f62daa2e52b90"
+      "key": "0xe723f474c85410779c761fa705ff1f30d55cb35b00fbd99dddd7f6ee136c3e21",
+      "tx": "0x87bead0955398f8408350300f9ef199d868b6e1b34e08f557c321e36fc3d4178",
+      "photo": "0xabbb95610fa5005cf9ec09bf6af9d008b537f8b3efbf881d0fc0dbef848f4b48"
     }
   ],
   "forged": {
-    "entityKey": "0xf3097d19736c4452ea7b8a6fa7deca7b5f00a7b5ce329c7f080ab554a4654d58",
-    "txHash": "0x7a105ce9ad7a317c4b5e5152ac17d7df78f095ea644272e89419af52050c901c"
+    "entityKey": "0x85a5ac9666b34538c7c92c701ef99cd0536e1641c227deede9eeab232a3d0b6b",
+    "txHash": "0xb642409e1782e5ffaa25fa2b18fab29b5cc8ecc8b8e5ff6dba0a6d84a35e39f5"
   },
   "extension": {
-    "entityKey": "0x7349771437ee9fba3aef2f3fe823453256a27074690d3b080dd0489c17766d25",
-    "txHash": "0xaa819f7f5457042c4d6c39775663034daa3ca1a366f7397f08327460faea2b79"
+    "entityKey": "0x632dfd74e47a1cca1091789b244780d0504d563beba21f9355ca021eddc826f1",
+    "txHash": "0x222e527b3c202f46ff00c77cb1aa3cf1bff18f3b07a70c2e1de37736d16da9f7"
   }
 }

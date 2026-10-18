@@ -1,5 +1,5 @@
 import { getSession } from "../session";
-import { h, toB64Url } from "./dom";
+import { h, toB64Url, go } from "./dom";
 
 function linkBox(title: string, url: string, note: string): HTMLElement {
   const field = h("input", { type: "text", readonly: true, value: url, "aria-label": title });
@@ -20,7 +20,7 @@ function linkBox(title: string, url: string, note: string): HTMLElement {
 export function renderShare(app: HTMLElement): () => void {
   const s = getSession();
   if (!s) {
-    location.hash = "#/";
+    go("#/");
     return () => {};
   }
   const base = `${location.origin}${location.pathname}#/lawyer?a=${s.address}`;

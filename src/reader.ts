@@ -8,7 +8,7 @@ import "@fontsource/atkinson-hyperlegible/latin-700.css";
 import "./styles.css";
 import { mountLeaveNow } from "./ui/leave-now";
 import { deriveKeys } from "./lib";
-import { errText, h, toB64Url } from "./ui/dom";
+import { errText, h, toB64Url, go } from "./ui/dom";
 import { renderLawyer } from "./ui/lawyer";
 
 const app = document.getElementById("app")!;
@@ -25,26 +25,26 @@ function home(): void {
   const pass = h("input", { type: "password", id: "passphrase", autocomplete: "off" });
   const linkIn = h("input", { type: "text", id: "share-link", placeholder: "or paste a lawyer link" });
   const status = h("p", { role: "status" });
-  const go = h("button", { type: "submit" }, "Open");
-  const form = h("form", {}, h("label", { for: "passphrase" }, "Passphrase"), pass, h("label", { for: "share-link" }, "Lawyer link"), linkIn, h("div", { class: "actions" }, go), status);
+  const submitBtn = h("button", { type: "submit" }, "Open");
+  const form = h("form", {}, h("label", { for: "passphrase" }, "Passphrase"), pass, h("label", { for: "share-link" }, "Lawyer link"), linkIn, h("div", { class: "actions" }, submitBtn), status);
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    go.disabled = true;
+    submitBtn.disabled = true;
     try {
       const pasted = linkIn.value.trim();
       if (pasted) {
         const i = pasted.indexOf("#/lawyer?");
         if (i < 0) throw new Error("That is not a lawyer link.");
-        location.hash = pasted.slice(i);
+        go(pasted.slice(i));
       } else {
         status.textContent = "Opening...";
         const k = await deriveKeys(pass.value);
-        location.hash = `#/lawyer?a=${k.address}&k=${toB64Url(k.contentKeyRaw)}`;
+        go(`#/lawyer?a=${k.address}&k=${toB64Url(k.contentKeyRaw)}`);
       }
     } catch (err) {
       status.className = "error";
       status.textContent = errText(err);
-      go.disabled = false;
+      submitBtn.disabled = false;
     }
   });
   app.replaceChildren(h("h1", {}, "Safe Journal reader"), h("p", {}, "This one file reads a journal straight from Arkiv. It works even if the Safe Journal website is gone."), form);
