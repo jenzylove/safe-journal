@@ -1,3 +1,8 @@
+import "@fontsource/newsreader/latin-500.css";
+import "@fontsource/newsreader/latin-600.css";
+import "@fontsource/newsreader/latin-400-italic.css";
+import "@fontsource/atkinson-hyperlegible/latin-400.css";
+import "@fontsource/atkinson-hyperlegible/latin-700.css";
 // Standalone reader: one self-contained HTML file. It needs nothing from our site, only the public
 // Arkiv RPC. Open it with a passphrase or paste a lawyer link, and it shows the journal.
 import "./styles.css";

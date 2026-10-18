@@ -1,3 +1,8 @@
+import "@fontsource/newsreader/latin-500.css";
+import "@fontsource/newsreader/latin-600.css";
+import "@fontsource/newsreader/latin-400-italic.css";
+import "@fontsource/atkinson-hyperlegible/latin-400.css";
+import "@fontsource/atkinson-hyperlegible/latin-700.css";
 import "./styles.css";
 import { mountLeaveNow } from "./ui/leave-now";
 import { renderOpen } from "./ui/open";

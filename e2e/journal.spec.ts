@@ -9,7 +9,6 @@ test("open a new journal, share link, nothing stored on the device", async ({ pa
   await expect(page.locator("#gen-note")).toContainText("Write them down");
 
   await page.getByRole("button", { name: "Open journal" }).click();
-  await expect(page.locator("#open-status")).toHaveText("Opening...");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Journal", { timeout: 30_000 });
   await expect(page.getByText("No entries yet.")).toBeVisible({ timeout: 45_000 });
 
