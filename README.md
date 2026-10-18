@@ -28,7 +28,7 @@ Everyone who supports people living with abuse gives the same advice: write down
 | Use it (start a journal in a private tab) | [safe-journal-seven.vercel.app](https://safe-journal-seven.vercel.app) |
 | Open the demo journal, exactly as a lawyer sees it | [/#/demo](https://safe-journal-seven.vercel.app/#/demo) |
 | Every claim checked live from Arkiv | [/#/proof](https://safe-journal-seven.vercel.app/#/proof) |
-| Watch the demo (under 3 minutes) | *link added at submission* |
+| Watch the demo (2:40, recorded on the live site) | [safe-journal-demo.mp4](https://github.com/jenzylove/safe-journal/releases/download/v1.0/safe-journal-demo.mp4) |
 | The data contract: entities, attributes, lifetimes, queries | [arkiv/schema.md](arkiv/schema.md) |
 | Reproduce it from a terminal | `npm install && node scripts/verify.mjs` |
 | The same app on a second, independent host (GitHub Pages, no server of ours) | [jenzylove.github.io/safe-journal](https://jenzylove.github.io/safe-journal/) |
