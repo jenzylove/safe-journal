@@ -302,3 +302,23 @@ section { margin: 2rem 0; }
 @media print { .site-footer { display: none !important; } }
 #regen { margin-left: -0.75rem; }
 .quiet-link a { text-underline-offset: 0.2em; }
+
+/* Desktop landing: text and seal side by side, the rest of the page in a readable column. */
+@media (min-width: 960px) {
+  body:has(.hero) main { max-width: 66rem; }
+  body:has(.hero) .wordmark { max-width: 66rem; }
+  body:has(.hero) main > :not(.hero) { max-width: 40rem; }
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    column-gap: 4rem;
+    align-items: center;
+    min-height: 62vh;
+    align-content: center;
+    grid-auto-rows: min-content;
+  }
+  .hero > :not(.hero-seal) { grid-column: 1; }
+  .hero h1 { font-size: 3.6rem; }
+  .hero-seal { grid-column: 2; grid-row: 1 / span 4; margin: 0; }
+  .hero-seal .seal { width: 260px; height: 260px; }
+}
