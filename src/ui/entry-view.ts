@@ -37,7 +37,7 @@ function spaced(n: bigint): string {
 
 /** One entry. `full` = lawyer view (proof open, block number, full keys). */
 export function renderEntry(item: JournalItem, contentKey: CryptoKey | null, nowBlock: bigint, full: boolean): HTMLElement {
-  const art = h("article", { class: "entry" });
+  const art = h("article", { class: "entry reveal" });
   const entry = item.entry;
 
   art.append(

@@ -19,7 +19,7 @@ export function renderProof(app: HTMLElement): () => void {
 
   const rows: Row[] = [
     {
-      claim: "Every demo entry is owned by the burn address, so nobody can delete or change it",
+      claim: "Entries cannot be deleted",
       check: async () => {
         const items = await listEntries(journal, null);
         const locked = items.filter((i) => i.owner.toLowerCase() === BURN.toLowerCase()).length;
@@ -27,7 +27,7 @@ export function renderProof(app: HTMLElement): () => void {
       },
     },
     {
-      claim: "Each entry's write time comes from the Arkiv block, not from the phone",
+      claim: "Write times come from Arkiv",
       check: async () => {
         const items = await listEntries(journal, null);
         const it = items[0];
@@ -36,7 +36,7 @@ export function renderProof(app: HTMLElement): () => void {
       },
     },
     {
-      claim: "The explorer shows only three labels and scrambled data",
+      claim: "Nothing readable is public",
       check: async () => {
         const e = await readEntity(first);
         const attrs = (e.attributes ?? {}) as Record<string, { value: unknown }>;
@@ -45,7 +45,7 @@ export function renderProof(app: HTMLElement): () => void {
       },
     },
     {
-      claim: "A forged entry with the same labels, from another wallet, is ignored",
+      claim: "Forged entries are ignored",
       check: async () => {
         const n = await countForeignEntries(journal);
         const f = await readEntity(evidence.forged.entityKey as Hex);
@@ -53,7 +53,7 @@ export function renderProof(app: HTMLElement): () => void {
       },
     },
     {
-      claim: "A share link opens only the entries chosen for it",
+      claim: "A link opens only chosen entries",
       check: async () => {
         const contentKey = await importContentKey(fromB64Url(DEMO_CONTENT_KEY));
         const owned = (await listEntries(journal, { contentKey })).filter((i) => i.entryKeyRaw);
@@ -66,7 +66,7 @@ export function renderProof(app: HTMLElement): () => void {
       },
     },
     {
-      claim: "Anyone can keep an entry alive longer (permissionless Lifetime Extension)",
+      claim: "Lifetimes can be extended, if allowed",
       check: async () => {
         const e = await readEntity(first);
         const years = (Number((e.expiresAt as bigint) - (e.createdAt as bigint)) * 2) / (365.25 * 86400);
@@ -74,7 +74,7 @@ export function renderProof(app: HTMLElement): () => void {
       },
     },
     {
-      claim: "The funder can top up new journals",
+      claim: "New journals can be funded",
       check: async () => {
         const b = await balanceOf(funder);
         return { ok: b > 0n, detail: `Funder balance ${(Number(b) / 1e18).toFixed(4)} GLM`, links: [["funder wallet", explorerAddress(funder)]] };
@@ -84,20 +84,24 @@ export function renderProof(app: HTMLElement): () => void {
 
   const list = h("ol", { class: "proof" });
   app.replaceChildren(
-    skyBand(h("h1", {}, "Proof"), h("p", {}, "Live from Arkiv, read when this page opened. All demo data is synthetic.")),
+    skyBand(h("h1", {}, "Proof"), h("p", {}, "Checked live from Arkiv when you opened this page.")),
     list,
-    h("h2", {}, "Wallets that create this project's entities"),
-    h("ul", {}, ...evidence.wallets.map((w) => h("li", {}, `${w.role}: `, link(explorerAddress(w.address as Hex), w.address)))),
+    h(
+      "details",
+      { class: "wallets" },
+      h("summary", {}, "Wallets behind this demo"),
+      h("ul", {}, ...evidence.wallets.map((w) => h("li", {}, `${w.role}: `, link(explorerAddress(w.address as Hex), w.address)))),
+    ),
   );
   for (const r of rows) {
-    const li = h("li", {}, h("strong", {}, r.claim), h("p", { class: "hint" }, "Checking..."));
+    const li = h("li", { class: "reveal" }, h("strong", {}, r.claim), h("p", { class: "hint" }, "Checking..."));
     list.append(li);
     r.check().then(
       (res) => {
         const p = li.querySelector("p")!;
         p.textContent = `${res.ok ? "Verified" : "Not verified"}: ${res.detail}`;
         p.className = res.ok ? "ok" : "error";
-        for (const [t, href] of res.links ?? []) li.append(" ", link(href, t));
+        for (const [t, href] of (res.links ?? []).slice(0, 1)) li.append(" ", link(href, t));
       },
       (e) => { const p = li.querySelector("p")!; p.className = "error"; p.textContent = errText(e); },
     );

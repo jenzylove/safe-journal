@@ -8,7 +8,7 @@ const routes: Array<[string, string]> = [
   ["#/write", "Open journal"],
   ["#/share", "Open journal"], // share.ts redirects to the open screen without a session
   ["#/journal", "Open journal"],
-  ["#/lawyer", "Lawyer view"],
+  ["#/lawyer", "Shared journal"],
   ["#/demo", "Demo journal"],
   ["#/proof", "Proof"],
 ];

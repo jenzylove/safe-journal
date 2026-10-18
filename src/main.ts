@@ -14,6 +14,7 @@ import { renderLanding } from "./ui/landing";
 import { renderStart } from "./ui/start";
 import { renderDecoy } from "./ui/decoy";
 import { mountFooter } from "./ui/footer";
+import { initMotion } from "./ui/motion";
 
 const screens: Record<string, (app: HTMLElement) => () => void> = {
   "#/": renderLanding,
@@ -47,7 +48,7 @@ const routes: Record<string, { title: string; text: string }> = {
     text: "Create a read only link so a lawyer or advocate can view your journal.",
   },
   "#/lawyer": {
-    title: "Lawyer view",
+    title: "Shared journal",
     text: "A read only, printable timeline with the proven write time of each entry.",
   },
   "#/demo": { title: "Demo journal", text: "A synthetic journal for judges to open and inspect." },
@@ -110,5 +111,6 @@ document.addEventListener("click", (e) => {
 });
 mountHeader();
 mountFooter();
+initMotion();
 if (!location.hash) go("#/");
 render();
