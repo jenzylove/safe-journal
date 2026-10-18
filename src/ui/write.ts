@@ -2,6 +2,7 @@ import { blockTime, getOne, LIFETIMES, writeEntry, type LifetimeYears } from "..
 import { CATEGORIES, type Category } from "../lib";
 import { getSession } from "../session";
 import { CATEGORY_LABELS, errText, fmtTime, h, go } from "./dom";
+import { skyBand } from "./sky";
 import { preparePhoto } from "./photo";
 import { ensureFunded } from "./fund";
 
@@ -96,8 +97,7 @@ export function renderWrite(app: HTMLElement): () => void {
         proven = "";
       }
       app.replaceChildren(
-        h("h1", {}, "Saved"),
-        h("p", {}, proven ? `Your entry was written at ${proven}, and Arkiv has proven that time.` : "Your entry was saved."),
+        skyBand(h("h1", {}, "Saved"), h("p", {}, proven ? `Your entry was written at ${proven}, and Arkiv has proven that time.` : "Your entry was saved.")),
         h("p", {}, h("a", { href: "#/journal", class: "button" }, "Back to journal")),
       );
     } catch (err) {
@@ -107,6 +107,6 @@ export function renderWrite(app: HTMLElement): () => void {
     }
   });
 
-  app.replaceChildren(h("h1", {}, "Write an entry"), h("p", { class: "hint" }, "Nothing here is saved on this device."), form);
+  app.replaceChildren(skyBand(h("h1", {}, "Write an entry"), h("p", { class: "hint" }, "Nothing here is saved on this device.")), form);
   return () => {};
 }

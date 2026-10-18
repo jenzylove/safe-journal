@@ -2,8 +2,9 @@
 // script); every status shown here is read live from Arkiv when the page opens.
 import type { Hex } from "viem";
 import evidence from "../../arkiv/evidence.json";
-import { BURN, balanceOf, blockTime, countForeignEntries, explorerAddress, explorerEntity, explorerTx, listEntries, publicClient } from "../arkiv/journal";
+import { BURN, readEntity, balanceOf, blockTime, countForeignEntries, explorerAddress, explorerEntity, explorerTx, listEntries, publicClient } from "../arkiv/journal";
 import { errText, fmtTime, fromB64Url, h, link, short } from "./dom";
+import { skyBand } from "./sky";
 import { DEMO_CONTENT_KEY } from "../demo";
 import { decodeShare, encodeShare, importContentKey } from "../lib";
 
@@ -37,7 +38,7 @@ export function renderProof(app: HTMLElement): () => void {
     {
       claim: "The explorer shows only three labels and scrambled data",
       check: async () => {
-        const e = await publicClient.getEntity(first);
+        const e = await readEntity(first);
         const attrs = (e.attributes ?? {}) as Record<string, { value: unknown }>;
         const names = Object.entries(attrs).map(([k, v]) => `${k}=${String(v.value)}`).join(", ");
         return { ok: true, detail: `Labels: ${names || "none"}; payload ${(e.payload as Uint8Array).length} bytes of ciphertext`, links: [["open on explorer", explorerEntity(first)]] };
@@ -47,7 +48,7 @@ export function renderProof(app: HTMLElement): () => void {
       claim: "A forged entry with the same labels, from another wallet, is ignored",
       check: async () => {
         const n = await countForeignEntries(journal);
-        const f = await publicClient.getEntity(evidence.forged.entityKey as Hex);
+        const f = await readEntity(evidence.forged.entityKey as Hex);
         return { ok: f.creator.toLowerCase() === forger.toLowerCase() && n >= 1, detail: `Forged entry created by ${short(f.creator)}; ${n} look-alike entries from other wallets, none shown in the journal`, links: [["forged entry", explorerEntity(evidence.forged.entityKey as Hex)], ["forger wallet", explorerAddress(forger)]] };
       },
     },
@@ -67,7 +68,7 @@ export function renderProof(app: HTMLElement): () => void {
     {
       claim: "Anyone can keep an entry alive longer (permissionless Lifetime Extension)",
       check: async () => {
-        const e = await publicClient.getEntity(first);
+        const e = await readEntity(first);
         const years = (Number((e.expiresAt as bigint) - (e.createdAt as bigint)) * 2) / (365.25 * 86400);
         return { ok: years > 2.5, detail: `Written with a 2 year lifetime; extended by ${short(supporter)}, now about ${years.toFixed(1)} years from creation`, links: [["extension transaction", explorerTx(evidence.extension.txHash as Hex)]] };
       },
@@ -83,8 +84,7 @@ export function renderProof(app: HTMLElement): () => void {
 
   const list = h("ol", { class: "proof" });
   app.replaceChildren(
-    h("h1", {}, "Proof"),
-    h("p", {}, "Live from Arkiv, read when this page opened. All demo data is synthetic."),
+    skyBand(h("h1", {}, "Proof"), h("p", {}, "Live from Arkiv, read when this page opened. All demo data is synthetic.")),
     list,
     h("h2", {}, "Wallets that create this project's entities"),
     h("ul", {}, ...evidence.wallets.map((w) => h("li", {}, `${w.role}: `, link(explorerAddress(w.address as Hex), w.address)))),

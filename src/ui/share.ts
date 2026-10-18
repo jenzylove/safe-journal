@@ -2,6 +2,7 @@ import { listEntries, type JournalItem } from "../arkiv/journal";
 import { encodeShare } from "../lib";
 import { getSession } from "../session";
 import { CATEGORY_LABELS, errText, fmtTime, h, toB64Url, go } from "./dom";
+import { skyBand } from "./sky";
 
 function linkBox(title: string, url: string, note: string): HTMLElement {
   const field = h("input", { type: "text", readonly: true, value: url, "aria-label": title });
@@ -49,8 +50,7 @@ export function renderShare(app: HTMLElement): () => void {
   });
 
   app.replaceChildren(
-    h("h1", {}, "Share with a lawyer"),
-    h("p", {}, "Choose what to share. A link opens only the entries you pick, so you never have to hand over the whole journal."),
+    skyBand(h("h1", {}, "Share with a lawyer"), h("p", {}, "Choose what to share. A link opens only the entries you pick, so you never have to hand over the whole journal.")),
     h("p", { class: "warn" }, "Whoever has a link can read what it opens. Send it only to your lawyer or advocate, never to a group chat."),
     status,
     choices,

@@ -2,6 +2,7 @@ import { writeEntry } from "../arkiv/journal";
 import { deriveKeys, generatePassphrase } from "../lib";
 import { getSession } from "../session";
 import { errText, h, go } from "./dom";
+import { skyBand } from "./sky";
 import { ensureFunded } from "./fund";
 
 const DEFAULT_NOTES = ["Pick up bread and tomatoes on the way home", "Call mum on Sunday evening", "Pay the light bill before Friday"];
@@ -76,11 +77,13 @@ export function renderDecoy(app: HTMLElement): () => void {
   );
   area.append(box, h("p", {}, "Learn these six words too. Use them only if you are forced."), form, done);
   app.replaceChildren(
-    h("h1", {}, "An everyday journal"),
-    h(
-      "p",
-      {},
-      "If someone forces you to open your journal, you can give them a different passphrase. It opens a separate journal of ordinary notes, and your real one stays closed. Nothing on the outside shows that two journals exist.",
+    skyBand(
+      h("h1", {}, "An everyday journal"),
+      h(
+        "p",
+        {},
+        "If someone forces you to open your journal, you can give them a different passphrase. It opens a separate journal of ordinary notes, and your real one stays closed. Nothing on the outside shows that two journals exist.",
+      ),
     ),
     h("div", { class: "actions" }, show),
     area,

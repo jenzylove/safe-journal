@@ -1,12 +1,10 @@
-import "@fontsource/newsreader/latin-500.css";
-import "@fontsource/newsreader/latin-600.css";
-import "@fontsource/newsreader/latin-400-italic.css";
-import "@fontsource/atkinson-hyperlegible/latin-400.css";
-import "@fontsource/atkinson-hyperlegible/latin-700.css";
+import "@fontsource-variable/geist";
+import "@fontsource-variable/geist-mono";
 // Standalone reader: one self-contained HTML file. It needs nothing from our site, only the public
 // Arkiv RPC. Open it with a passphrase or paste a lawyer link, and it shows the journal.
 import "./styles.css";
-import { mountLeaveNow } from "./ui/leave-now";
+import { mountHeader } from "./ui/header";
+import { skyBand } from "./ui/sky";
 import { deriveKeys } from "./lib";
 import { errText, h, toB64Url, go } from "./ui/dom";
 import { renderLawyer } from "./ui/lawyer";
@@ -17,7 +15,7 @@ let cleanup: () => void = () => {};
 function showLawyer(): void {
   cleanup();
   cleanup = renderLawyer(app);
-  app.prepend(h("p", { class: "hint" }, "Standalone reader. Read directly from Arkiv; no Safe Journal server involved."));
+  app.firstElementChild?.after(h("p", { class: "hint" }, "Standalone reader. Read directly from Arkiv; no Safe Journal server involved."));
 }
 
 function home(): void {
@@ -47,10 +45,10 @@ function home(): void {
       submitBtn.disabled = false;
     }
   });
-  app.replaceChildren(h("h1", {}, "Safe Journal reader"), h("p", {}, "This one file reads a journal straight from Arkiv. It works even if the Safe Journal website is gone."), form);
+  app.replaceChildren(skyBand(h("h1", {}, "Safe Journal reader"), h("p", {}, "This one file reads a journal straight from Arkiv. It works even if the Safe Journal website is gone.")), form);
 }
 
 function route(): void { if (location.hash.startsWith("#/lawyer?")) showLawyer(); else home(); }
 window.addEventListener("hashchange", route);
-mountLeaveNow();
+mountHeader({ minimal: true });
 route();

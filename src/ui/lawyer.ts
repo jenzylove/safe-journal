@@ -2,6 +2,7 @@ import type { Hex } from "viem";
 import { countForeignEntries, listEntries, publicClient } from "../arkiv/journal";
 import { importContentKey, decodeShare, type Access } from "../lib";
 import { errText, fromB64Url, h, short } from "./dom";
+import { skyBand } from "./sky";
 import { releasePhotos, renderEntry } from "./entry-view";
 
 export function renderLawyer(app: HTMLElement): () => void {
@@ -11,7 +12,7 @@ export function renderLawyer(app: HTMLElement): () => void {
   const shareParam = q.get("s");
   // Keep the key only in memory: take it out of the address bar (and so out of browser history).
   if (k || shareParam) history.replaceState(null, "", `${location.pathname}#/lawyer?a=${a}`);
-  app.replaceChildren(h("h1", {}, "Lawyer view"));
+  app.replaceChildren(skyBand(h("h1", {}, "Lawyer view")));
   if (!/^0x[0-9a-fA-F]{40}$/.test(a)) {
     app.append(h("p", { class: "error" }, "This link is not complete. Ask for the link again."));
     return () => {};

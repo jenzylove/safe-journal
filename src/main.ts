@@ -1,11 +1,8 @@
 import { go } from "./ui/dom";
-import "@fontsource/newsreader/latin-500.css";
-import "@fontsource/newsreader/latin-600.css";
-import "@fontsource/newsreader/latin-400-italic.css";
-import "@fontsource/atkinson-hyperlegible/latin-400.css";
-import "@fontsource/atkinson-hyperlegible/latin-700.css";
+import "@fontsource-variable/geist";
+import "@fontsource-variable/geist-mono";
 import "./styles.css";
-import { mountLeaveNow } from "./ui/leave-now";
+import { mountHeader } from "./ui/header";
 import { renderOpen } from "./ui/open";
 import { renderJournal } from "./ui/journal";
 import { renderWrite } from "./ui/write";
@@ -74,6 +71,7 @@ function render(): void {
   const screen = screens[path];
   if (screen) {
     cleanup = screen(app);
+    afterRender();
     return;
   }
   const h1 = document.createElement("h1");
@@ -81,6 +79,16 @@ function render(): void {
   const p = document.createElement("p");
   p.textContent = route.text;
   app.replaceChildren(h1, p);
+  afterRender();
+}
+
+/** Where to scroll once the next screen is drawn (set by links that point at a section). */
+let pendingScroll: string | null = null;
+function afterRender(): void {
+  const id = pendingScroll;
+  pendingScroll = null;
+  if (id) document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  else window.scrollTo(0, 0);
 }
 
 window.addEventListener("hashchange", render);
@@ -89,9 +97,18 @@ document.addEventListener("click", (e) => {
   const a = (e.target as Element | null)?.closest?.("a[href^='#']");
   if (!a) return;
   e.preventDefault();
-  go(a.getAttribute("href")!);
+  const href = a.getAttribute("href")!;
+  const scrollTo = a.getAttribute("data-scroll");
+  if (scrollTo) {
+    if (location.hash === href) {
+      document.getElementById(scrollTo)?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+    pendingScroll = scrollTo;
+  }
+  go(href);
 });
-mountLeaveNow();
+mountHeader();
 mountFooter();
 if (!location.hash) go("#/");
 render();

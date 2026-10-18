@@ -1,6 +1,7 @@
 import { deriveKeys, generatePassphrase } from "../lib";
 import { setSession } from "../session";
 import { errText, h, go } from "./dom";
+import { skyBand } from "./sky";
 
 export function renderStart(app: HTMLElement): () => void {
   let words = "";
@@ -81,8 +82,7 @@ export function renderStart(app: HTMLElement): () => void {
     form,
   );
   app.replaceChildren(
-    h("h1", {}, "Start your journal"),
-    h("p", {}, "Your journal opens with six words. There is no account and no reset, so these words are the only way in."),
+    skyBand(h("h1", {}, "Start your journal"), h("p", {}, "Your journal opens with six words. There is no account and no reset, so these words are the only way in.")),
     h("div", { class: "actions" }, show),
     area,
     h("p", { class: "quiet-link" }, "Prefer your own passphrase? ", h("a", { href: "#/open" }, "Open with it here.")),

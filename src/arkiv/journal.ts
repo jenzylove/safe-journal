@@ -26,14 +26,54 @@ export class ArkivUnavailable extends Error {
   constructor(what: string) { super(`Arkiv is not answering right now (${what}). Nothing was lost; try again in a minute.`); }
 }
 
+/** Arkiv limits anonymous reads per connection by cost. Remember when the limit lifts. */
+let limitedUntil = 0;
+export class ArkivRateLimited extends Error {
+  constructor() {
+    const mins = Math.max(1, Math.ceil((limitedUntil - Date.now()) / 60_000));
+    super(`Arkiv is limiting reads from this connection for about ${mins} ${mins === 1 ? "minute" : "minutes"}. Nothing was lost; please come back then.`);
+  }
+}
+const isRateLimited = (e: unknown) => /ANON_COST_LIMITED|QUOTA_EXCEEDED|429/.test(String((e as Error)?.message ?? e) + String((e as { details?: string })?.details ?? ""));
+
 async function withTimeout<T>(p: Promise<T>, what: string, ms = READ_TIMEOUT_MS): Promise<T> {
   let t: ReturnType<typeof setTimeout> | undefined;
+  if (limitedUntil > Date.now()) throw new ArkivRateLimited();
   try {
     return await Promise.race([p, new Promise<never>((_, rej) => { t = setTimeout(() => rej(new ArkivUnavailable(what)), ms); })]);
+  } catch (e) {
+    if (isRateLimited(e)) { if (limitedUntil < Date.now()) limitedUntil = Date.now() + 30 * 60_000; throw new ArkivRateLimited(); }
+    throw e;
   } finally { clearTimeout(t); }
 }
 
-export const publicClient = createPublicClient({ chain: tiramisu, transport: http(RPC_HTTP) });
+// One retry only: a rate-limited read should fail fast with a clear message, not back off for minutes.
+export const publicClient = createPublicClient({
+  chain: tiramisu,
+  transport: http(RPC_HTTP, {
+    retryCount: 1,
+    onFetchResponse(res) {
+      if (res.status === 429) {
+        const secs = Number(res.headers.get("retry-after"));
+        limitedUntil = Date.now() + (Number.isFinite(secs) && secs > 0 ? secs * 1000 : 30 * 60_000);
+      }
+    },
+  }),
+});
+
+/** Reads are costly on the public RPC, so the same query is answered from memory for a short while. */
+const CACHE_MS = 60_000;
+const cache = new Map<string, { at: number; value: Promise<unknown> }>();
+function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < CACHE_MS) return hit.value as Promise<T>;
+  const value = load();
+  cache.set(key, { at: Date.now(), value });
+  value.catch(() => cache.delete(key));
+  return value;
+}
+/** Call after this tab writes, so the next read shows the new entry. */
+export function forgetReads(): void { cache.clear(); }
 
 let wsClient: ReturnType<typeof createPublicClient> | undefined;
 function ws() { return (wsClient ??= createPublicClient({ chain: tiramisu, transport: webSocket(RPC_WS) })); }
@@ -85,6 +125,7 @@ async function doWrite(signingKey: Hex, contentKey: CryptoKey, entry: Omit<Entry
     throw new Error("entry key moved during write; please write the entry again");
   }
   await publicClient.waitForTransactionReceipt({ hash: r.txHash });
+  forgetReads();
   return { entityKey: entryKey.key, photoKey: photoKey?.key, txHash: r.txHash };
 }
 
@@ -109,14 +150,22 @@ const SELECT = { key: true, creator: true, owner: true, createdAt: true, expires
 export type AccessArg = Access | CryptoKey | null;
 const toAccess = (a: AccessArg): Access => (a && "type" in (a as object) && (a as CryptoKey).algorithm ? { contentKey: a as CryptoKey } : ((a as Access | null) ?? {}));
 
+function rawEntries(address: Hex): Promise<Selected[]> {
+  return cached(`entries:${address.toLowerCase()}`, async () => {
+    const raw: Selected[] = [];
+    let page = await withTimeout(publicClient.select(SELECT).where([eq("app", APP), eq("kind", "entry")]).createdBy(address).limit(100).fetch(), "reading the journal");
+    for (;;) {
+      raw.push(...(page.entities as unknown as Selected[]));
+      if (!page.hasNextPage()) break;
+      page = await withTimeout(page.next(), "reading the next page");
+    }
+    return raw;
+  });
+}
+
 export async function listEntries(address: Hex, access: AccessArg): Promise<JournalItem[]> {
   const out: JournalItem[] = [];
-  let page = await withTimeout(publicClient.select(SELECT).where([eq("app", APP), eq("kind", "entry")]).createdBy(address).limit(100).fetch(), "reading the journal");
-  for (;;) {
-    for (const e of page.entities) out.push(await toItem(e, toAccess(access)));
-    if (!page.hasNextPage()) break;
-    page = await withTimeout(page.next(), "reading the next page");
-  }
+  for (const e of await rawEntries(address)) out.push(await toItem(e, toAccess(access)));
   return out.sort((a, b) => (a.createdAtBlock < b.createdAtBlock ? -1 : a.createdAtBlock > b.createdAtBlock ? 1 : 0));
 }
 
@@ -138,7 +187,7 @@ async function toItem(e: Selected, access: Access): Promise<JournalItem> {
 
 /** How many entries carry our attributes but were written by some other wallet. */
 export async function countForeignEntries(address: Hex): Promise<number> {
-  const page = await withTimeout(publicClient.select({ creator: true }).where([eq("app", APP), eq("kind", "entry")]).limit(200).fetch(), "counting other entries");
+  const page = await cached("foreign", () => withTimeout(publicClient.select({ creator: true }).where([eq("app", APP), eq("kind", "entry")]).limit(200).fetch(), "counting other entries"));
   return page.entities.filter((e) => e.creator.toLowerCase() !== address.toLowerCase()).length;
 }
 
@@ -187,3 +236,8 @@ export async function balanceOf(address: Hex): Promise<bigint> {
 export const explorerEntity = (key: Hex) => `${EXPLORER}/entity/${key}`;
 export const explorerTx = (tx: Hex) => `${EXPLORER}/tx/${tx}`;
 export const explorerAddress = (a: Hex) => `${EXPLORER}/address/${a}`;
+
+/** One entity, read through the short cache (used by the proof page, which shows the same entity twice). */
+export function readEntity(key: Hex) {
+  return cached(`entity:${key.toLowerCase()}`, () => withTimeout(publicClient.getEntity(key), "reading an entity"));
+}

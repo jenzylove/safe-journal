@@ -25,23 +25,33 @@ export function leaveNow(replace: (url: string) => void = (u) => location.replac
   replace(LEAVE_URL);
 }
 
-export function mountLeaveNow(): void {
-  if (document.getElementById("leave-now")) return;
+export function createLeaveButton(): HTMLButtonElement {
   const btn = document.createElement("button");
   btn.id = "leave-now";
   btn.type = "button";
   btn.className = "leave-now";
   btn.innerHTML =
-    '<svg class="leave-glyph" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4"/><path d="M14 8l4 4-4 4"/><path d="M18 12H9"/></svg><span>Leave now</span>';
+    '<svg class="leave-glyph" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4"/><path d="M14 8l4 4-4 4"/><path d="M18 12H9"/></svg><span>Leave now</span>';
   btn.addEventListener("click", () => leaveNow());
-  const mark = document.createElement("header");
-  mark.className = "wordmark";
-  mark.textContent = "Safe Journal";
-  document.body.prepend(mark);
-  document.body.appendChild(btn);
+  return btn;
+}
 
+let escapeInstalled = false;
+function installEscape(): void {
+  if (escapeInstalled) return;
+  escapeInstalled = true;
   const pressed = createEscapeTracker(() => Date.now());
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && pressed()) leaveNow();
   });
+}
+
+/** Puts the Leave now button into `host` (the header) and arms the triple Escape. */
+export function mountLeaveNow(host: HTMLElement = document.body): HTMLButtonElement {
+  const existing = document.getElementById("leave-now") as HTMLButtonElement | null;
+  if (existing) return existing;
+  const btn = createLeaveButton();
+  host.appendChild(btn);
+  installEscape();
+  return btn;
 }

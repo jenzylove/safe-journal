@@ -10,7 +10,7 @@ export function mountFooter(): void {
     h(
       "nav",
       { "aria-label": "More" },
-      h("a", { href: "#/" }, "How it works"),
+      h("a", { href: "#/", "data-scroll": "how" }, "How it works"),
       h("a", { href: "#/demo" }, "Demo"),
       h("a", { href: "#/proof" }, "Proof"),
       reader,

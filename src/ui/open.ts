@@ -2,6 +2,7 @@ import { checkPassphrase, deriveKeys, generatePassphrase, unknownWords } from ".
 import { listEntries } from "../arkiv/journal";
 import { setSession } from "../session";
 import { errText, h, go } from "./dom";
+import { skyBand } from "./sky";
 
 export function renderOpen(app: HTMLElement): () => void {
   const input = h("input", {
@@ -102,8 +103,7 @@ export function renderOpen(app: HTMLElement): () => void {
   });
 
   app.replaceChildren(
-    h("h1", {}, "Open journal"),
-    h("p", {}, "Enter your passphrase to open your journal."),
+    skyBand(h("h1", {}, "Open journal"), h("p", {}, "Enter your passphrase to open your journal.")),
     h("p", {}, "Use a private tab. Nothing is saved on this device."),
     form,
   );

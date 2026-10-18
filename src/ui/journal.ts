@@ -2,6 +2,7 @@ import type { Hex } from "viem";
 import { getOne, listEntries, publicClient, watchJournal, type JournalItem } from "../arkiv/journal";
 import { clearSession, getSession } from "../session";
 import { errText, h, go } from "./dom";
+import { skyBand } from "./sky";
 import { releasePhotos, renderEntry } from "./entry-view";
 
 export function renderJournal(app: HTMLElement): () => void {
@@ -26,7 +27,7 @@ export function renderJournal(app: HTMLElement): () => void {
   });
 
   app.replaceChildren(
-    h("h1", {}, "Journal"),
+    skyBand(h("h1", {}, "Journal")),
     h(
       "div",
       { class: "actions no-print" },

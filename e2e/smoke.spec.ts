@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const routes: Array<[string, string]> = [
-  ["#/", "Write it down. Keep it safe. Make it count."],
+  ["#/", "Write it down. Keep it safe."],
   ["#/open", "Open journal"],
   ["#/start", "Start your journal"],
   ["#/decoy", "Open journal"], // no session: back to the open screen
@@ -23,6 +23,6 @@ for (const [hash, title] of routes) {
 
 test("unknown route goes to #/", async ({ page }) => {
   await page.goto("/#/nope");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Write it down. Keep it safe. Make it count.");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Write it down. Keep it safe.");
   expect(page.url()).toMatch(/#\/$/);
 });
