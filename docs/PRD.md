@@ -31,7 +31,7 @@ Everything below ships. Nothing is descoped quietly; any cut is listed in sectio
 - Fields: what happened (text), when it happened (the person's own date and time), category (physical, threats, financial, digital, other), optional photo.
 - The photo is resized and recompressed in the browser, metadata (EXIF, GPS) stripped, then encrypted.
 - One Arkiv batch per entry: create the entry entity (and its photo chunks), then hand ownership of each to a burn address in the same batch, so no one can delete or change them afterwards, not the person, not an abuser holding the phone, not us.
-- Entities are created with **permissionless extension**, so the person or their lawyer can keep the record alive. The person chooses the entry's lifetime (1, 2 or 5 years), and can extend it later.
+- Entities are created `readonly`. The person chooses the entry's lifetime (1, 2, 5 or 10 years) and whether her lawyer may keep it longer (**permissionless extension**, off by default); the lawyer view then offers "Keep this entry one more year".
 - Nothing is stored on the device: no local copy, no cache of plaintext, nothing in browser storage.
 
 ### 3.3 The journal
@@ -60,7 +60,7 @@ Everything below ships. Nothing is descoped quietly; any cut is listed in sectio
 
 | Entity | Attributes (public, queryable) | Payload (encrypted) | Lifetime | Owner after create |
 |---|---|---|---|---|
-| `entry` | `app` = `safejournal`, `kind` = `entry`, `v` (number) | text, the person's own date and time, category, photo chunk keys, photo hash | 1, 2 or 5 years, person's choice, extendable by anyone | burn address |
+| `entry` | `app` = `safejournal`, `kind` = `entry`, `v` (number) | text, the person's own date and time, category, photo chunk keys, photo hash | 1, 2, 5 or 10 years, person's choice, extendable by anyone | burn address |
 | `photo` | `app`, `kind` = `photo`, `v`, `part` (number), `of` (number) | one encrypted chunk of the photo | same as its entry | burn address |
 
 Kept to the minimum on purpose: no time, category, place or name in attributes. Ordering uses `$createdAt` from the chain plus client sort. Queries: `createdBy(addr)` + `app` + `kind`, cursor pagination.
@@ -85,7 +85,7 @@ Kept to the minimum on purpose: no time, category, place or name in attributes. 
 | Nothing is stored on the device | Test: after writing and closing, browser storage, cache and IndexedDB contain no entry data (automated check in the headless browser) |
 | The explorer shows nothing readable | Explorer link to a demo entry: three attributes and ciphertext only |
 | Entry times can't be backdated | Each entry's write time is `$createdAt` resolved to the block timestamp, linked to the creating transaction |
-| Entries can't be deleted or changed | On-chain: owner is the burn address; a delete and a patch attempted from the journal key both revert (transactions linked in `/proof`) |
+| Entries can't be deleted or changed | On-chain: owner is the burn address and the entity is `readonly`; a delete and a patch from the journal key are refused by the node with "owned by 0x…dEaD" (spike 1). `/proof` checks owner and flag on every demo entry |
 | Anyone can keep the record alive | A lifetime extension sent from a different wallet succeeds (transaction linked) |
 | Forged entries are ignored | An entity with identical attributes from another wallet is written; the lawyer view lists it as "not from this journal" |
 | It outlives our site | The standalone reader opens the demo journal with only an Arkiv RPC (shown in the demo with the main site down) |
@@ -94,7 +94,7 @@ Kept to the minimum on purpose: no time, category, place or name in attributes. 
 ## 7. What it does not do
 
 - It does not prove an entry is **true**, only **when** it was written and that it was never changed. Courts still weigh corroboration.
-- If someone forces the passphrase out of the person, they can **read** the journal (they still cannot delete it). A decoy passphrase is an open question for the owner, not in scope unless decided.
+- If someone forces the passphrase out of the person, they can **read** the journal (they still cannot delete it). In scope after review: a second, everyday passphrase that opens a separate journal of ordinary notes (#/decoy).
 - It cannot protect against spyware already on the phone (a keylogger sees the passphrase).
 - Expired entities leave Arkiv's state but their ciphertext stays in chain history; privacy rests on the key, not on expiry.
 - A share link cannot be revoked; whoever holds it can read the journal.
