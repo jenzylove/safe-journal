@@ -36,6 +36,11 @@ export function renderDecoy(app: HTMLElement): () => void {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (!words) return;
+    if (!inputs.some((i) => i.value.trim())) {
+      status.className = "error";
+      status.textContent = "Write at least one ordinary note first, in your own words.";
+      return;
+    }
     const say = (m: string): void => {
       status.className = "";
       status.textContent = m;
