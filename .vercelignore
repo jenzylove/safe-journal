@@ -1,0 +1,4 @@
+api/**/*.test.ts
+spikes/
+scripts/seed-demo.ts
+e2e/

@@ -2,9 +2,9 @@ import { expect, test } from "@playwright/test";
 
 const routes: Array<[string, string]> = [
   ["#/", "Open journal"],
-  ["#/journal", "Journal"],
-  ["#/write", "Write an entry"],
-  ["#/share", "Share with a lawyer"],
+  ["#/write", "Open journal"], // no session: back to the open screen
+  ["#/share", "Open journal"],
+  ["#/journal", "Open journal"],
   ["#/lawyer", "Lawyer view"],
   ["#/demo", "Demo journal"],
   ["#/proof", "Proof"],

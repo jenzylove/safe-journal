@@ -47,3 +47,32 @@ p {
   border-radius: 0.375rem;
   cursor: pointer;
 }
+a { color: var(--fg); }
+label { display: block; margin: 1rem 0 0.25rem; font-weight: 600; }
+input, textarea, select { font: inherit; width: 100%; box-sizing: border-box; padding: 0.5rem; background: var(--bg); color: var(--fg); border: 1px solid var(--muted); border-radius: 0.375rem; }
+.field { display: flex; gap: 0.5rem; }
+.field button { flex: none; }
+button, a.button { font: inherit; padding: 0.5rem 1rem; background: var(--bg); color: var(--fg); border: 2px solid var(--accent); border-radius: 0.375rem; cursor: pointer; text-decoration: none; display: inline-block; }
+button:disabled { opacity: 0.5; cursor: default; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 1rem 0; }
+.error { color: #b00020; font-weight: 600; }
+.warn { font-weight: 600; }
+.ok { font-weight: 600; }
+.hint { font-size: 0.9rem; }
+.entry { border-top: 1px solid var(--muted); padding: 1rem 0; }
+.entry h3 { margin: 0 0 0.25rem; }
+.entry-text { white-space: pre-wrap; color: var(--fg); }
+.entry img { max-width: 100%; }
+.proof { font-size: 0.85rem; color: var(--muted); }
+.proof dl { margin: 0.5rem 0 0; }
+.proof .row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.proof dt { font-weight: 600; }
+.proof dd { margin: 0; overflow-wrap: anywhere; }
+[hidden] { display: none !important; }
+@media print {
+  .no-print, button, a.button { display: none !important; }
+  .leave-now { display: none !important; }
+  main { padding-top: 0; max-width: none; }
+  body { background: #fff; color: #000; }
+  .entry { break-inside: avoid; }
+}

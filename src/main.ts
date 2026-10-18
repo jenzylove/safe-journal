@@ -1,5 +1,23 @@
 import "./styles.css";
 import { mountLeaveNow } from "./ui/leave-now";
+import { renderOpen } from "./ui/open";
+import { renderJournal } from "./ui/journal";
+import { renderWrite } from "./ui/write";
+import { renderShare } from "./ui/share";
+import { renderLawyer } from "./ui/lawyer";
+import { renderDemo } from "./ui/demo";
+import { renderProof } from "./ui/proof";
+
+const screens: Record<string, (app: HTMLElement) => () => void> = {
+  "#/": renderOpen,
+  "#/journal": renderJournal,
+  "#/write": renderWrite,
+  "#/share": renderShare,
+  "#/lawyer": renderLawyer,
+  "#/demo": renderDemo,
+  "#/proof": renderProof,
+};
+let cleanup: () => void = () => {};
 
 const routes: Record<string, { title: string; text: string }> = {
   "#/": { title: "Open journal", text: "Enter your passphrase to open your journal. Use a private tab." },
@@ -29,9 +47,17 @@ const routes: Record<string, { title: string; text: string }> = {
 function render(): void {
   const app = document.getElementById("app");
   if (!app) return;
-  const route = routes[location.hash];
+  const path = location.hash.split("?")[0] ?? "";
+  const route = routes[path];
   if (!route) {
     location.hash = "#/";
+    return;
+  }
+  cleanup();
+  cleanup = () => {};
+  const screen = screens[path];
+  if (screen) {
+    cleanup = screen(app);
     return;
   }
   const h1 = document.createElement("h1");
