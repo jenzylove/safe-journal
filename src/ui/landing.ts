@@ -33,7 +33,7 @@ export function fmtBlock(n: bigint): string {
 export function renderLanding(app: HTMLElement): () => void {
   let stopped = false;
 
-  const pillText = h("span", { class: "pill-text" }, "Reading Arkiv2026");
+  const pillText = h("span", { class: "pill-text" }, "Reading Arkiv...");
   const pill = h(
     "span",
     { class: "sealed", id: "latest-seal", role: "status" },
