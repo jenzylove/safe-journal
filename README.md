@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/media/mark.svg" width="84" alt="Safe Journal seal">
+  <img src="docs/media/mark.svg" width="76" alt="Safe Journal">
 </p>
 
 <h1 align="center">Safe Journal</h1>
@@ -9,6 +9,7 @@
 <p align="center">
   <a href="https://safe-journal-seven.vercel.app"><img alt="Live app" src="https://img.shields.io/badge/live-safe--journal--seven.vercel.app-23463E?style=flat-square&labelColor=1E2A28"></a>
   <a href="https://safe-journal-seven.vercel.app/#/proof"><img alt="Proof, live from Arkiv" src="https://img.shields.io/badge/proof-live%20on%20Arkiv%20Tiramisu-8A2E24?style=flat-square&labelColor=1E2A28"></a>
+  <a href="https://github.com/jenzylove/safe-journal/actions/workflows/ci.yml"><img alt="Tests" src="https://github.com/jenzylove/safe-journal/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Built for Arkiv Global Tour Stop" src="https://img.shields.io/badge/built%20for-Arkiv%20Global%20Tour%20Stop-23463E?style=flat-square&labelColor=1E2A28">
   <img alt="Tracks" src="https://img.shields.io/badge/tracks-Privacy%20%C2%B7%20Security%20%C2%B7%20Censorship%20Resistance-5B6461?style=flat-square&labelColor=1E2A28">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-5B6461?style=flat-square&labelColor=1E2A28">
@@ -25,7 +26,7 @@ Everyone who supports people living with abuse gives the same advice: write down
 | | |
 |---|---|
 | Use it (start a journal in a private tab) | [safe-journal-seven.vercel.app](https://safe-journal-seven.vercel.app) |
-| Read the demo journal, as a lawyer would | [/#/demo](https://safe-journal-seven.vercel.app/#/demo) |
+| Open the demo journal, exactly as a lawyer sees it | [/#/demo](https://safe-journal-seven.vercel.app/#/demo) |
 | Every claim checked live from Arkiv | [/#/proof](https://safe-journal-seven.vercel.app/#/proof) |
 | Watch the demo (under 3 minutes) | *link added at submission* |
 | The data contract: entities, attributes, lifetimes, queries | [arkiv/schema.md](arkiv/schema.md) |
@@ -46,11 +47,13 @@ About one in three women worldwide has experienced physical or sexual violence, 
 
 1. **Choose six words.** Your journal opens with a passphrase only you know. No account, no email, no phone number. Keys are made from it in your browser and never leave it.
 2. **Write what happened.** Text, the time you say it happened, a category and an optional photo. The photo is redrawn on this device, which strips its location data. Everything is encrypted before it leaves the browser.
-3. **Each entry gets a seal.** One Arkiv transaction creates the entry and hands it to a burn address, so it can never be deleted or changed. The seal shows the block it was written in: proof of when, which nobody can backdate.
+3. **Each entry is sealed.** One Arkiv transaction creates the entry and hands it to a burn address, so it can never be deleted or changed. Every entry shows the block it was sealed in: proof of when, which nobody can backdate.
 4. **Share when you are ready.** Every entry has its own key. A link for your lawyer opens only the entries you choose, with a printable timeline of proven times, creating transactions and lifetimes. The key leaves the address bar the moment the page loads.
 5. **It outlives this website.** A single file reader opens any journal straight from Arkiv.
 
 If someone forces you to open your journal, a second passphrase opens an everyday journal of ordinary notes instead. Nothing on the outside shows that two journals exist.
+
+Entries live exactly as long as you choose (1, 2, 5 or 10 years). Only if you tick "Let my lawyer keep this entry longer" can anyone extend one.
 
 ## Why only on Arkiv
 
@@ -59,7 +62,7 @@ On a normal server, the write time is our word and the evidence dies when we do.
 | Arkiv feature | What the person sees |
 |---|---|
 | Atomic `executeBatch` with `ownershipChanges` | "Owner: burn address, cannot be deleted" on every entry, from the first second |
-| `$createdAt` block | The seal, and "Written at" next to "You said it happened" |
+| `$createdAt` block | "Sealed · block #…" and "Written at" next to "You said it happened" |
 | `createdBy(journal)` | A forged entry with identical labels is shown as not part of the journal |
 | Entity Expiration, chosen per entry | "How long to keep it": 1, 2, 5 or 10 years, and nobody can shorten it |
 | `permissionlessExtension`, opt in | "Let my lawyer keep this entry longer": off unless the person ticks it |
