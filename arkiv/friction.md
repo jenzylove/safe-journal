@@ -25,6 +25,7 @@ Arkiv surfaces used while building Safe Journal. SDK `@arkiv-network/sdk` 0.8.1,
 - **Actual:** 100 KB succeeded (4,122,020 gas, block 715339); 127 KB failed with "Transaction failed: Execution error without revert data", the exact message an unfunded wallet gets.
 - **Repro:** SDK 0.8.1, Tiramisu, funded wallet, `createEntity({ payload: randomBytes(127 * 1024), ... })`. Script and output in `spikes/`.
 - **Fix:** a size specific error from the node or the SDK, and the public RPC's real payload ceiling in the docs.
+- **Upstream:** also reported as [reported-issues #23](https://github.com/Arkiv-Network/reported-issues/issues/23) (a batch over about 128 KB fails with "Execution error without revert data"; the real error is an HTTP 413). Open as of 18 Oct 2026.
 
 ## F4. Tested path that worked: create plus ownership handoff in one batch
 
@@ -80,6 +81,7 @@ Arkiv surfaces used while building Safe Journal. SDK `@arkiv-network/sdk` 0.8.1,
 - **Repro:** `curl -s -D - -X POST https://rpc.tiramisu.db-chain.testnet.arkiv.network -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"arkiv_query","params":["app = \"safejournal\"",{"resultsPerPage":"0x1"}]}'` repeated from one connection until the budget is spent; read `retry-after`.
 - **What we did:** `retryCount: 1`, an `onFetchResponse` hook that reads `retry-after`, a 60 second in tab cache of identical queries, and a plain "Arkiv is limiting reads from this connection for about N minutes" message (`src/arkiv/journal.ts`).
 - **Fix:** document the budget and the cost of one query next to the RPC URL, and have the SDK throw a typed rate limit error carrying `retry-after`.
+- **Upstream:** also reported as [reported-issues #17](https://github.com/Arkiv-Network/reported-issues/issues/17) (keyless query budget undocumented, SDK hangs on 429). Open as of 18 Oct 2026.
 
 ## F11. The faucet can only fund the wallet connected in a browser
 
@@ -89,6 +91,7 @@ Arkiv surfaces used while building Safe Journal. SDK `@arkiv-network/sdk` 0.8.1,
 - **Actual:** the faucet needs a connected wallet and a Sign In With Ethereum signature, then a human check. A journal key derived from a passphrase inside a browser tab cannot do that, so the app needs its own funding endpoint, which puts a server back in the write path. Our own first claim also landed in the connected MetaMask account instead of the address we meant, because the "Send to" field was left empty; the GLM then had to be sent on manually.
 - **Repro:** 1. open `hub.arkiv.network/faucet` in a browser without a wallet extension: there is no way to paste an address. 2. With MetaMask, connect, sign in, pass the check and claim with "Send to" empty: the 10 GLM goes to the connected account. 3. Our project wallet `0x659C…aBc8` stayed at 0 until 5 GLM was sent on by hand (`eth_getBalance` before and after).
 - **Fix:** a paste an address mode (with the same human check), or sponsored writes.
+- **Upstream:** also requested in [reported-issues #20](https://github.com/Arkiv-Network/reported-issues/issues/20) (let the faucet send to a pasted address without connecting a wallet). Open as of 18 Oct 2026.
 
 ## F12. Expiry removes an entity from state but not its payload from chain history
 
@@ -106,6 +109,7 @@ Arkiv surfaces used while building Safe Journal. SDK `@arkiv-network/sdk` 0.8.1,
 - **Actual:** on an entity created with `readonly: true` and still owned by its creator, `patchEntity` is refused with a clear message ("was created readonly, so its contents can never change. Its expiry can still be extended, and it can be transferred or deleted"), but `deleteEntity` by the owner **succeeds** (tx `0x92832f2cac3a0f6147f147451a8a5a5b7a2fe4c8a801ea202b7cb1fc1ca1f308`, then `getEntity` reports no live entity). So to make journal entries undeletable we set `readonly` and also hand ownership to `0x…dEaD` in the creating batch (spike 6, tx `0x947f3d957ba7a23db88edeb8c8bd0b923b35012175da2c88bcb72d31a69a5e67`; a stranger could still extend it because `permissionlessExtension` was set). Two other builders in this hack hit the same thing: 1888-Labs/Mandate friction item 2 and mohitt31/jalsaakshya friction item 9.
 - **Repro:** `node spikes/spike7-readonly-delete.mjs` (output in `spikes/spike7.out.txt`) and `node spikes/spike6-readonly.mjs`.
 - **Fix:** say next to the flag that the owner can still delete, document the burn owner pattern, or add an "undeletable" flag.
+- **Upstream:** also requested in [reported-issues #21](https://github.com/Arkiv-Network/reported-issues/issues/21) (an "undeletable" creation flag, since readonly still lets the owner delete). Open as of 18 Oct 2026.
 
 ## F14. Entity events carry no creator and no attributes
 
