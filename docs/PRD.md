@@ -60,10 +60,10 @@ Everything below ships. Nothing is descoped quietly; any cut is listed in sectio
 
 | Entity | Attributes (public, queryable) | Payload (encrypted) | Lifetime | Owner after create |
 |---|---|---|---|---|
-| `entry` | `app` = `safejournal`, `kind` = `entry`, `v` (number) | text, the person's own date and time, category, photo chunk keys, photo hash | 1, 2, 5 or 10 years, person's choice, extendable by anyone | burn address |
+| `entry` | `app` = `safejournal`, `kind` = `entry`, `v` (number), `journal` (the creator, as a writable label) | text, the person's own date and time, category, photo chunk keys, photo hash | 1, 2, 5 or 10 years, person's choice; extendable by anyone only if she ticked the box | burn address |
 | `photo` | `app`, `kind` = `photo`, `v`, `part` (number), `of` (number) | one encrypted chunk of the photo | same as its entry | burn address |
 
-Kept to the minimum on purpose: no time, category, place or name in attributes. Ordering uses `$createdAt` from the chain plus client sort. Queries: `createdBy(addr)` + `app` + `kind`, cursor pagination.
+Kept to the minimum on purpose: four labels, and no time, category, place or name in attributes. Ordering uses `$createdAt` from the chain plus client sort. Queries: `createdBy(addr)` + `app` + `kind`, cursor pagination.
 
 **Kept off Arkiv on purpose:** the passphrase, keys, any plaintext, the photo's original file and metadata, and anything identifying the person. The funding function's logs hold no content.
 
@@ -83,7 +83,7 @@ Kept to the minimum on purpose: no time, category, place or name in attributes. 
 | Claim | Proof |
 |---|---|
 | Nothing is stored on the device | Test: after writing and closing, browser storage, cache and IndexedDB contain no entry data (automated check in the headless browser) |
-| The explorer shows nothing readable | Explorer link to a demo entry: three attributes and ciphertext only |
+| The explorer shows nothing readable | Explorer link to a demo entry: four labels and ciphertext only |
 | Entry times can't be backdated | Each entry's write time is `$createdAt` resolved to the block timestamp, linked to the creating transaction |
 | Entries can't be deleted or changed | On-chain: owner is the burn address and the entity is `readonly`; a delete and a patch from the journal key are refused by the node with "owned by 0x…dEaD" (spike 1). `/proof` checks owner and flag on every demo entry |
 | Anyone can keep the record alive | A lifetime extension sent from a different wallet succeeds (transaction linked) |

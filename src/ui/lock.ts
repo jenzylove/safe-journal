@@ -1,3 +1,4 @@
+import { leaveNow } from "./leave-now";
 // Auto lock. A journal left open on a phone that someone else picks up is the risk: after two minutes
 // out of sight, or fifteen minutes without a touch, the keys are dropped and the page goes home.
 // Only timestamps in memory are used; nothing is stored anywhere.
@@ -26,12 +27,10 @@ export function startAutoLock(): () => void {
     clearSession();
     hiddenSince = null;
     lastInput = Date.now();
-    const app = document.getElementById("app");
-    // Wipe what is on screen at once, then go home. On the landing screen there is nothing to wipe.
-    if (location.hash !== "#/") {
-      app?.replaceChildren();
-      go("#/");
-    }
+    // Wipe what is on screen at once, then leave for the weather: whoever picks the phone up next
+    // should not land on a page that says what this site is.
+    document.getElementById("app")?.replaceChildren();
+    leaveNow();
   };
   const check = (): void => {
     if (!getSession()) return;

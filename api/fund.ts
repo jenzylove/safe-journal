@@ -20,6 +20,10 @@ import { checkPow, hourBucket } from "../src/lib/pow.js";
 const RPC = "https://rpc.tiramisu.db-chain.testnet.arkiv.network";
 export const TOP_UP = parseEther("0.01"); // about five entries with a full size photo, far more without
 export const LOW = parseEther("0.003"); // covers one write with the largest photo
+export const EXTEND_TOP_UP = parseEther("0.0005"); // a lawyer's throwaway key only pays for extensions (about 0.000025 each)
+const BURN = "0x000000000000000000000000000000000000dead";
+/** One request per address at a time on this instance, so parallel requests cannot double fund. */
+const inFlight = new Set<string>();
 const PER_IP_PER_HOUR = 10;
 const MIN_WRITES_FOR_REFILL = 3;
 
@@ -63,28 +67,35 @@ export default async function handler(req: Req, res: Res) {
   const ip = (Array.isArray(fwd) ? fwd[0] : fwd)?.split(",")[0]?.trim() || "unknown";
   if (!allow(ip)) return res.status(429).json({ error: "Too many requests from this connection. Try again in an hour." });
 
+  const purpose = body?.purpose === "extend" ? "extend" : "write";
+  if (inFlight.has(address)) return res.status(429).json({ error: "Already preparing this journal. Wait a moment." });
+  inFlight.add(address);
   const pub = createPublicClient({ chain: tiramisu, transport: http(RPC, { retryCount: 1 }) });
   try {
     const [balance, txCount] = await Promise.all([pub.getBalance({ address }), pub.getTransactionCount({ address })]);
     let writes = 0;
     if (txCount > 0 && balance < LOW) {
-      const page = await pub.select({ key: true }).where([eq("app", "safejournal")]).createdBy(address).limit(50).fetch();
-      writes = page.entities.length;
+      // Only real journal entries count: kind=entry, created by this address, owned by the burn address.
+      const page = await pub.select({ owner: true }).where([eq("app", "safejournal"), eq("kind", "entry")]).createdBy(address).limit(50).fetch();
+      writes = page.entities.filter((e) => String(e.owner).toLowerCase() === BURN).length;
     }
-    const decision = mayFund(balance, txCount, writes);
+    const decision = purpose === "extend" ? (txCount === 0 && balance < EXTEND_TOP_UP ? { ok: true } : { ok: false, reason: balance >= EXTEND_TOP_UP ? "already has enough" : "Only a fresh key can be funded for extensions." }) : mayFund(balance, txCount, writes);
     if (!decision.ok) return res.status(decision.reason === "already has enough" ? 200 : 403).json(decision.reason === "already has enough" ? { funded: false, reason: decision.reason } : { error: decision.reason });
     const wallet = createWalletClient({ chain: tiramisu, transport: http(RPC), account: privateKeyToAccount(key) });
+    const value = purpose === "extend" ? EXTEND_TOP_UP : TOP_UP;
     let txHash: Hex;
     try {
-      txHash = await wallet.sendTransaction({ to: address, value: TOP_UP });
+      txHash = await wallet.sendTransaction({ to: address, value });
     } catch (e) {
       // Two top ups at the same moment can collide on the funder's nonce; try once more.
       if (!/nonce/i.test(String((e as Error).message))) throw e;
-      txHash = await wallet.sendTransaction({ to: address, value: TOP_UP });
+      txHash = await wallet.sendTransaction({ to: address, value });
     }
     return res.status(200).json({ funded: true, txHash });
   } catch {
     return res.status(502).json({ error: "Could not reach Arkiv to prepare your journal. Try again in a minute." });
+  } finally {
+    inFlight.delete(address);
   }
 }
 

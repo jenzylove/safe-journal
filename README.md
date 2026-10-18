@@ -43,6 +43,14 @@ About one in three women worldwide has experienced physical or sexual violence, 
 - **The dates get doubted.** "You wrote all of this afterwards." A note's date is whatever the phone says, and an app's timestamp is that company's word.
 - **The evidence lives with someone else.** Apps built for this keep it on their own servers. When one of them shut down in 2023, its users were told to move their evidence out themselves.
 
+## Why these three pillars
+
+**Privacy.** *Who is exposed today:* a person whose partner checks her phone, and whose evidence otherwise sits in a notes app, a gallery, or an operator's servers. *What changes on day one:* nothing about the journal is on her phone; Arkiv shows four labels and ciphertext, never her words, photos, names or the times she gave; each entry lives for the lifetime she picks; a link opens only the entries she chooses. What the public record does reveal (that an address writes entries, and when) is set out in the [threat model](SECURITY.md#threat-model).
+
+**Security.** *Who is misled today:* a court or an advocate told "she wrote all this afterwards", or shown a planted message under her name ("I made all of this up"). *What changes on day one:* every entry's time is the Arkiv block it was created in, every read trusts only `createdBy(journal)`, and anything carrying her journal's label but written by another wallet is shown as rejected, live, in the lawyer view.
+
+**Censorship Resistance.** *Who is cut off today:* survivors whose evidence app shuts down or is taken offline; one shut down in 2023 and told its users to move their data out themselves. *What changes on day one:* the journal is read straight from an Arkiv node by a one file reader that can point at any node; no server of ours is needed to read, and anyone can fund a journal from the public faucet if our funding endpoint is gone.
+
 ## How it works
 
 1. **Choose six words.** Your journal opens with a passphrase only you know. No account, no email, no phone number. Keys are made from it in your browser and never leave it.
@@ -51,26 +59,27 @@ About one in three women worldwide has experienced physical or sexual violence, 
 4. **Share when you are ready.** Every entry has its own key. A link for your lawyer opens only the entries you choose, with a printable timeline of proven times, creating transactions and lifetimes. The key leaves the address bar the moment the page loads.
 5. **It outlives this website.** A single file reader opens any journal straight from Arkiv.
 
-If someone forces you to open your journal, a second passphrase opens an everyday journal of ordinary notes instead. Nothing on Arkiv links the two journals.
+If someone forces you to open your journal, a second passphrase opens an everyday journal of ordinary notes instead. Nothing in the journals links them (setting both up minutes apart could, which the app says).
 
 Entries live exactly as long as you choose (1, 2, 5 or 10 years). Only if you tick "Let my lawyer keep this entry longer" can anyone extend one.
 
 ## Why only on Arkiv
 
-Safe Journal needs one record with three properties at once, and Arkiv is the only place we found all three.
+Safe Journal needs one record with three properties at once. Arkiv is the only place we found all three as protocol features rather than code we would have to write and run.
 
 1. **Anyone can read it by its proven author, across years, with no server.** `createdBy(journal)` is the whole read path of the app, the lawyer view and the one file reader. It goes straight to an Arkiv node: no indexer, no API of ours, nothing to shut down.
 2. **Nobody can delete or edit it.** The creating batch hands every entry to `0x…dEaD` and marks it `readonly`, in the same transaction. Not us, not the person under pressure, not someone holding her phone.
 3. **It lives for a lifetime she picks, which nobody can shorten, and which her lawyer can extend without any key, but only if she allowed it.** That is Entity Expiration plus Lifetime Extension with the permissionless flag set per entry, a rule the chain itself enforces.
 
-Take Arkiv away and the product falls apart:
+Take Arkiv away and something important breaks:
 
 | Instead of Arkiv | What breaks |
 |---|---|
-| Our own server or Postgres | The write time is our word, we can delete, and the evidence dies with us. One evidence app for survivors already shut down and told users to move their data out themselves |
-| A timestamping service (OpenTimestamps) | The time is proven, but the evidence itself stays on the phone that gets checked, or with an operator |
-| Arweave or IPFS | Arweave never lets a closed case drop out of the public record, and reads go through a gateway's indexer. IPFS has no time, no queries and needs someone to pin |
-| A plain EVM contract with events | Reading one journal by author across years runs into the block range limits public nodes put on `getLogs`, so someone has to run an indexer, which is a server that can vanish. There is no lifetime and no third party extension either |
+| Our own server or Postgres | The write time is our word, we can delete, and the evidence dies with us. One evidence app for survivors already shut down and told its users to move their data out themselves |
+| A timestamping service (OpenTimestamps) | The time is proven, but the evidence itself still has to live somewhere: on the phone that gets checked, or with an operator |
+| Arweave | Permanent and timestamped, so it cannot honour a lifetime she chooses, and it has no per entry permission for a lawyer to extend one. Reads by author go through a gateway's index |
+| IPFS | No proven time, no queries, and someone has to keep pinning it |
+| A custom contract on any chain | It can be made undeletable and timestamped, but we would have to design its storage, write its read path, deploy and own it, and build lifetimes and a permission to extend ourselves. Arkiv gives those as protocol features: entity lifetimes, a per entity permissionless extension flag, `createdBy` reads straight from a node, and readonly entities |
 
 Cost: an entry costs about 0.0001 test GLM, an entry with a full size photo about 0.002 (measured on Tiramisu, see `docs/spikes`).
 
@@ -85,7 +94,7 @@ Kept off Arkiv on purpose: the passphrase, every key, all plaintext, the origina
 | `createdBy(journal)` vs the writable `journal` label | A planted "I made it all up" entry carrying the journal's label is shown under "Not from this journal" as rejected |
 | Entity Expiration, chosen per entry | "How long to keep it": 1, 2, 5 or 10 years, and nobody can shorten it |
 | `permissionlessExtension` (opt in) and `extendEntity` | "Let my lawyer keep this entry longer" when writing; "Keep this entry one more year" in the lawyer view, paid by a throwaway key |
-| Attributes vs payload | The explorer shows three labels and ciphertext, nothing about the person |
+| Attributes vs payload | The explorer shows four labels and ciphertext, never the person's words, photos or names |
 | `watchEntityEvents` over WebSocket | New entries appear in an open journal and in an open lawyer view without a refresh |
 
 ## What is live

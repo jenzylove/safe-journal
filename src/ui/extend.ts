@@ -45,7 +45,7 @@ export function keepControl(item: JournalItem, onExtended?: (expiresAt: bigint, 
     say("Preparing...");
     try {
       const done = await inTurn(async () => {
-        await ensureFunded(privateKeyToAccount(payerKey()).address, say);
+        await ensureFunded(privateKeyToAccount(payerKey()).address, say, "extend");
         say("Keeping the entry longer...");
         const r = await extendEntry(payerKey(), item.key, 1);
         const nowBlock = await publicClient.getBlockNumber();

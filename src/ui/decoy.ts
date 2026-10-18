@@ -5,7 +5,7 @@ import { errText, h, go } from "./dom";
 import { skyBand } from "./sky";
 import { ensureFunded } from "./fund";
 
-const DEFAULT_NOTES = ["Pick up bread and tomatoes on the way home", "Call mum on Sunday evening", "Pay the light bill before Friday"];
+const NOTE_HINTS = ["An ordinary note, in your own words", "Another one", "And one more (optional)"];
 
 export function renderDecoy(app: HTMLElement): () => void {
   if (!getSession()) {
@@ -19,8 +19,8 @@ export function renderDecoy(app: HTMLElement): () => void {
   const box = h("p", { class: "mono big-words", id: "decoy-words" });
   const status = h("p", { id: "decoy-status", role: "status" });
   const create = h("button", { type: "submit", id: "decoy-btn" }, "Create everyday journal");
-  const inputs = DEFAULT_NOTES.map((n, i) =>
-    h("input", { type: "text", id: `note${i}`, "aria-label": `Note ${i + 1}`, value: n, maxlength: "200" }),
+  const inputs = NOTE_HINTS.map((n, i) =>
+    h("input", { type: "text", id: `note${i}`, "aria-label": `Note ${i + 1}`, placeholder: n, maxlength: "200" }),
   );
   const done = h("div", { id: "decoy-done" });
   done.hidden = true;
@@ -82,7 +82,7 @@ export function renderDecoy(app: HTMLElement): () => void {
       h(
         "p",
         {},
-        "If someone forces you to open your journal, you can give them a different passphrase. It opens a separate journal of ordinary notes, and your real one stays closed. Nothing on Arkiv links the two journals.",
+        "If someone forces you to open your journal, you can give them a different passphrase. It opens a separate journal of ordinary notes, and your real one stays closed. Nothing in the journals links them. Setting both up from this site minutes apart could, so if you can, set this one up on another day.",
       ),
     ),
     h("div", { class: "actions" }, show),

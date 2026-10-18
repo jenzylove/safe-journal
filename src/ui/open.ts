@@ -19,7 +19,7 @@ export function renderOpen(app: HTMLElement): () => void {
   const note = h("p", { id: "gen-note", "aria-live": "polite" });
   const status = h("p", { id: "open-status", role: "status" });
   const openBtn = h("button", { type: "submit", id: "open-btn" }, "Open journal");
-  const gen = h("button", { type: "button", id: "gen-btn" }, "New here? Generate a passphrase");
+  const gen = h("button", { type: "button", id: "gen-btn" }, "New here? Start a journal");
 
   function update(): void {
     const v = input.value;
@@ -50,14 +50,8 @@ export function renderOpen(app: HTMLElement): () => void {
     input.type = hidden ? "text" : "password";
     show.textContent = hidden ? "Hide" : "Show";
   });
-  gen.addEventListener("click", () => {
-    input.value = generatePassphrase(6);
-    input.type = "text";
-    show.textContent = "Hide";
-    note.textContent =
-      "These six words are your key. Write them down on paper and keep that somewhere safe. If you lose them, nobody can get your journal back.";
-    update();
-  });
+  // New journals are started on the Start screen, which also checks the words were saved.
+  gen.addEventListener("click", () => go("#/start"));
 
   const form = h(
     "form",
@@ -81,15 +75,13 @@ export function renderOpen(app: HTMLElement): () => void {
     status.textContent = "Opening...";
     try {
       const k = await deriveKeys(input.value);
-      if (!checkPassphrase(input.value).ok) {
-        // A weak passphrase may open an existing journal, but never start a new one: the
-        // ciphertext is public forever, so a guessable passphrase would expose everything.
-        status.textContent = "Checking for an existing journal...";
-        const existing = await listEntries(k.address, null);
-        if (!existing.length) {
-          k.contentKeyRaw.fill(0);
-          throw new Error("No journal uses this passphrase yet, and it is too easy to guess to start one. Choose Start my journal to get six strong words.");
-        }
+      // This screen only OPENS journals that exist. New journals start from Start my journal, with
+      // six words the app generates; a phrase someone types never starts one.
+      status.textContent = "Looking for your journal...";
+      const existing = await listEntries(k.address, null);
+      if (!existing.length) {
+        k.contentKeyRaw.fill(0);
+        throw new Error("No journal uses these words. Check each word: one changed word is a different journal. To start a new journal, choose Start my journal.");
       }
       setSession({ address: k.address, signingKey: k.signingKey, contentKey: k.contentKey, contentKeyRaw: k.contentKeyRaw });
       input.value = "";

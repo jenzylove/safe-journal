@@ -68,7 +68,7 @@ Arkiv surfaces used while building Safe Journal. SDK `@arkiv-network/sdk` 0.8.1,
 
 - **Surface:** wallet client over HTTP in Chromium, `executeBatch`, `predictEntityKeys`
 - **Expected:** a key that only ever exists in a browser tab can write, read and watch without any server of ours in the data path.
-- **Actual:** on production, a fresh passphrase was funded with 0.02 GLM by our endpoint, wrote an entry plus photo in one batch (10.6 s from tap to proven time), read it back decrypted, and received it over the WebSocket watch. The page left nothing in localStorage, sessionStorage, IndexedDB, Cache Storage or cookies.
+- **Actual:** on production, a fresh passphrase was funded by our endpoint (0.01 GLM in the final build), wrote an entry plus photo in one batch (10.6 s from tap to proven time), read it back decrypted, and received it over the WebSocket watch. The page left nothing in localStorage, sessionStorage, IndexedDB, Cache Storage or cookies.
 - **Repro:** open https://safe-journal-seven.vercel.app in a private window, Generate, Open journal, write an entry with a photo.
 
 ## F10. The anonymous read budget locks a connection out for about 30 minutes, and through viem it first looks like a hang
@@ -84,25 +84,28 @@ Arkiv surfaces used while building Safe Journal. SDK `@arkiv-network/sdk` 0.8.1,
 ## F11. The faucet can only fund the wallet connected in a browser
 
 - **Surface:** Hub faucet (`hub.arkiv.network/faucet`)
+- **Versions:** Hub faucet as of 17 Oct 2026, MetaMask in Chrome, Tiramisu
 - **Expected:** fund an address that only exists inside an app, the way most testnet faucets take a pasted address.
 - **Actual:** the faucet needs a connected wallet and a Sign In With Ethereum signature, then a human check. A journal key derived from a passphrase inside a browser tab cannot do that, so the app needs its own funding endpoint, which puts a server back in the write path. Our own first claim also landed in the connected MetaMask account instead of the address we meant, because the "Send to" field was left empty; the GLM then had to be sent on manually.
-- **Repro:** open the faucet with no wallet extension; then with one, claim without filling "Send to".
+- **Repro:** 1. open `hub.arkiv.network/faucet` in a browser without a wallet extension: there is no way to paste an address. 2. With MetaMask, connect, sign in, pass the check and claim with "Send to" empty: the 10 GLM goes to the connected account. 3. Our project wallet `0x659C…aBc8` stayed at 0 until 5 GLM was sent on by hand (`eth_getBalance` before and after).
 - **Fix:** a paste an address mode (with the same human check), or sponsored writes.
 
 ## F12. Expiry removes an entity from state but not its payload from chain history
 
-- **Surface:** Entity Expiration (docs)
+- **Surface:** Entity Expiration (docs at docs.arkiv.network, read 18 Oct 2026), SDK 0.8.1
 - **Expected:** a clear note that expired payloads remain readable in transaction calldata, because privacy designs depend on it.
 - **Actual:** the docs describe expiry as data going away. The creating transaction still carries the payload, which the hackathon's own "evidence that survives expiry" gate relies on. We state it in our schema and threat model and never rely on expiry for privacy.
+- **Repro:** create an entity with `ExpirationTime.fromMinutes(2)`, wait for it to expire (`getEntity` then reports no live entity), then `eth_getTransactionByHash` on its creating transaction: the payload bytes are still in the input data.
 - **Fix:** one sentence in the Entity Expiration docs.
 
 ## F13. `readonly` alone does not stop the owner deleting; we combine it with a burn address owner
 
-- **Surface:** creation flags
-- **Expected:** a flag that makes an entity permanent until expiry.
-- **Actual:** `readonly` stops patches, but the owner can still delete. To make entries undeletable we hand ownership to `0x…dEaD` in the creating batch and set `readonly` too (spike 6: both flags plus the handoff in one batch, tx `0x947f3d957ba7a23db88edeb8c8bd0b923b35012175da2c88bcb72d31a69a5e67`; a stranger could still extend it because `permissionlessExtension` was set). Other builders report the same surprise.
-- **Repro:** `node spikes/spike6-readonly.mjs`.
-- **Fix:** document the pattern, or add an "undeletable" flag.
+- **Surface:** creation flags, `deleteEntity`, `patchEntity`
+- **Versions:** SDK 0.8.1, Tiramisu, 18 Oct 2026
+- **Expected:** a flag that makes an entity permanent until it expires.
+- **Actual:** on an entity created with `readonly: true` and still owned by its creator, `patchEntity` is refused with a clear message ("was created readonly, so its contents can never change. Its expiry can still be extended, and it can be transferred or deleted"), but `deleteEntity` by the owner **succeeds** (tx `0x92832f2cac3a0f6147f147451a8a5a5b7a2fe4c8a801ea202b7cb1fc1ca1f308`, then `getEntity` reports no live entity). So to make journal entries undeletable we set `readonly` and also hand ownership to `0x…dEaD` in the creating batch (spike 6, tx `0x947f3d957ba7a23db88edeb8c8bd0b923b35012175da2c88bcb72d31a69a5e67`; a stranger could still extend it because `permissionlessExtension` was set). Two other builders in this hack hit the same thing: 1888-Labs/Mandate friction item 2 and mohitt31/jalsaakshya friction item 9.
+- **Repro:** `node spikes/spike7-readonly-delete.mjs` (output in `spikes/spike7.out.txt`) and `node spikes/spike6-readonly.mjs`.
+- **Fix:** say next to the flag that the owner can still delete, document the burn owner pattern, or add an "undeletable" flag.
 
 ## F14. Entity events carry no creator and no attributes
 

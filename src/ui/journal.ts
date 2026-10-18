@@ -1,3 +1,4 @@
+import { leaveNow } from "./leave-now";
 import type { Hex } from "viem";
 import { getOne, listEntries, publicClient, watchJournal, type JournalItem } from "../arkiv/journal";
 import { clearSession, getSession } from "../session";
@@ -23,7 +24,8 @@ export function renderJournal(app: HTMLElement): () => void {
   const close = h("button", { type: "button" }, "Close journal");
   close.addEventListener("click", () => {
     clearSession();
-    go("#/");
+    document.getElementById("app")?.replaceChildren();
+    leaveNow();
   });
 
   app.replaceChildren(

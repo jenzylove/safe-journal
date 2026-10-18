@@ -24,7 +24,7 @@ export function renderWrite(app: HTMLElement): () => void {
   }
 
   const text = h("textarea", { id: "text", rows: "8", maxlength: String(MAX_TEXT), required: true });
-  const when = h("input", { type: "datetime-local", id: "when", required: true, value: localNow() });
+  const when = h("input", { type: "datetime-local", id: "when", required: true, value: localNow(), max: localNow() });
   const cat = h("select", { id: "category" });
   for (const c of CATEGORIES) cat.append(h("option", { value: c }, CATEGORY_LABELS[c] ?? c));
   const life = h("select", { id: "lifetime" });
@@ -49,7 +49,7 @@ export function renderWrite(app: HTMLElement): () => void {
     cat,
     h("label", { for: "lifetime" }, "How long to keep it"),
     life,
-    h("p", { class: "hint" }, "After this time the entry is removed from Arkiv. Nobody can shorten it."),
+    h("p", { class: "hint" }, "After this time Arkiv stops serving the entry. Nobody can shorten it."),
     h("label", { class: "check", for: "extendable" }, extendable, " Let my lawyer keep this entry longer"),
     h("p", { class: "hint" }, "Off unless you tick it. If you tick it, anyone holding the entry's address can add more time, which helps a court case outlast your choice. It never lets them read it."),
     h("label", { for: "photo" }, "Photo (optional)"),
@@ -92,6 +92,11 @@ export function renderWrite(app: HTMLElement): () => void {
       return;
     }
     const happened = new Date(when.value);
+    if (happened.getTime() > Date.now() + 60_000) {
+      status.className = "error";
+      status.textContent = "When it happened cannot be in the future.";
+      return;
+    }
     if (Number.isNaN(happened.getTime())) {
       status.className = "error";
       status.textContent = "Choose when it happened.";

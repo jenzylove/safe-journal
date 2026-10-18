@@ -157,7 +157,7 @@ export function renderLanding(app: HTMLElement): () => void {
       h(
         "p",
         {},
-        "You can set up a second passphrase that opens an everyday journal of ordinary notes. Your real journal stays closed, and nothing on Arkiv links the two journals.",
+        "You can set up a second passphrase that opens an everyday journal of ordinary notes. Your real journal stays closed, and nothing in the journals links them.",
       ),
       h("p", {}, h("a", { href: "#/start" }, "Set one up after you start")),
     ),

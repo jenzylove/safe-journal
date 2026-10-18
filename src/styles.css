@@ -527,6 +527,8 @@ main > .reveal { animation: none; }
   .status-pill { box-shadow: 0 0 0 1px #000; color: #000; background: #fff; }
   .status-pill i { background: #000; animation: none; }
   p { color: #000; }
+  /* The planted text is the attacker's words: on paper only the rejection is shown. */
+  #claims .claim-text { display: none !important; }
   /* Scroll reveal must never hide anything on paper. */
   .reveal, .js-reveal .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
 }

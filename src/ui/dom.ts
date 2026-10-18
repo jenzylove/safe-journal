@@ -32,7 +32,8 @@ export function short(s: string, head = 8, tail = 6): string {
 }
 
 export function fmtTime(d: Date): string {
-  return d.toLocaleString();
+  // Long time style includes the time zone, which a printed timeline for a court needs.
+  return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "long" });
 }
 
 export function errText(e: unknown): string {

@@ -1,0 +1,4 @@
+12:05:10 created readonly entity 0xbd18efcdb0ed07d4ddb3a70fa038d9eedf3da30e890cc214b334e24a99e6a85e owner 0x659C352eBC66BB7EEb582b3BB1Fe7d8b37f3aBc8
+12:05:11 patch by owner: refused :: Transaction failed: entity 0xbd18efcd…e6a85e was created readonly, so its contents can never change. Its expiry can still be extended, and it can be transferred or deleted
+12:05:18 delete by owner: SUCCEEDED 0x92832f2cac3a0f6147f147451a8a5a5b7a2fe4c8a801ea202b7cb1fc1ca1f308
+12:05:18 entity gone :: No live entity with key 0xbd18efcdb0ed07d4ddb3a70fa038d9eedf3da30e890cc214b334e24a99e6a85e. It was never created, or it has been deleted or has expired.

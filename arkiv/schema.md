@@ -52,7 +52,7 @@ The photo attached to an entry, if any. Redrawn on a canvas in the browser (whic
 
 ## Why so few attributes
 
-Attributes are public and queryable, so they hold only what the app must filter on. Time, category, place, names and text are all inside the encrypted payload. Ordering uses `$createdAt` from the chain plus a client-side sort (there is no server-side ordering). The explorer shows three labels and ciphertext.
+Attributes are public and queryable, so they hold only what the app must filter on. Time, category, place, names and text are all inside the encrypted payload. Ordering uses `$createdAt` from the chain plus a client-side sort (there is no server-side ordering). The explorer shows four labels and ciphertext.
 
 ## Writes
 
@@ -90,7 +90,7 @@ Expected output (abridged): four entries for `0x45259EADD9aBa97e0BC51f74ca2B7D2b
 
 ## Keys (how to build your own reader)
 
-- Normalisation: `NFKC`, trim; if every word is on the BIP39 English word list, lower case and single spaces (so capitals and extra spaces do not change the journal).
+- Normalisation: `NFKC`, trim; if there are two or more words and every word is on the BIP39 English word list, lower case and single spaces (so capitals and extra spaces do not change the journal).
 - Seed: `Argon2id(password = normalised passphrase, salt = "safejournal/argon2id/v1", memory = 64 MiB, iterations = 3, parallelism = 1, length = 32)`. The salt is shared by every journal because there is no account to hold a per person salt; new journals therefore start only from six different generated words (about 66 bits).
 - Signing key: `HKDF-SHA256(seed, info = "safejournal/sign/v1/<i>", 32)` for the first `i` that is a valid secp256k1 scalar (in practice `i = 0`). Its address is the journal.
 - Content key: `HKDF-SHA256(seed, info = "safejournal/content/v1", 32)`, used as an AES-256-GCM key.
@@ -111,4 +111,4 @@ Expected output (abridged): four entries for `0x45259EADD9aBa97e0BC51f74ca2B7D2b
 
 ## Kept off Arkiv on purpose
 
-The passphrase, every key, every plaintext, the original photo file and its metadata, and anything that identifies the person. The funding endpoint receives only an address and a proof of work (`sha256("safejournal-fund|<address>|<hour>|<nonce>")` with 19 leading zero bits, checked statelessly), sends 0.005 test GLM when the address is below 0.001, and keeps no log of its own. Expired entities leave Arkiv's state, but their ciphertext stays in the chain's transaction history; privacy rests on the key, not on expiry.
+The passphrase, every key, every plaintext, the original photo file and its metadata, and anything that identifies the person. The funding endpoint receives only an address and a proof of work (`sha256("safejournal-fund|<address>|<hour>|<nonce>")` with 19 leading zero bits, checked statelessly), sends 0.01 test GLM to a brand new address that is below 0.003, refills only an address that has written at least three journal entries (with most of its transactions being those writes), sends 0.0005 to a fresh key that only pays for a lawyer's extensions, and keeps no log of its own. Expired entities leave Arkiv's state, but their ciphertext stays in the chain's transaction history; privacy rests on the key, not on expiry.

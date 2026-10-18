@@ -34,7 +34,7 @@ export class ArkivRateLimited extends Error {
     super(`Arkiv is limiting reads from this connection for about ${mins} ${mins === 1 ? "minute" : "minutes"}. Nothing was lost; please come back then.`);
   }
 }
-const isRateLimited = (e: unknown) => /ANON_COST_LIMITED|QUOTA_EXCEEDED|429/.test(String((e as Error)?.message ?? e) + String((e as { details?: string })?.details ?? ""));
+const isRateLimited = (e: unknown) => /ANON_COST_LIMITED|QUOTA_EXCEEDED|Status: 429\b/.test(String((e as Error)?.message ?? e) + String((e as { details?: string })?.details ?? ""));
 
 async function withTimeout<T>(p: Promise<T>, what: string, ms = READ_TIMEOUT_MS): Promise<T> {
   let t: ReturnType<typeof setTimeout> | undefined;
