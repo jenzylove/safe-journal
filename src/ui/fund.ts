@@ -12,7 +12,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export async function ensureFunded(address: Hex, say: (msg: string) => void, purpose: "write" | "extend" = "write"): Promise<void> {
   const need = purpose === "extend" ? EXTEND_BALANCE : MIN_BALANCE;
   if ((await balanceOf(address)) >= need) return;
-  say("Preparing your journal...");
+  say(purpose === "extend" ? "Preparing the extension..." : "Preparing your journal...");
   const { hour, nonce } = await solvePow(address);
   const res = await fetch("/api/fund", {
     method: "POST",
