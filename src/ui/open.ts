@@ -81,7 +81,7 @@ export function renderOpen(app: HTMLElement): () => void {
         const existing = await listEntries(k.address, null);
         if (!existing.length) {
           k.contentKeyRaw.fill(0);
-          throw new Error("No journal uses this passphrase yet, and it is too easy to guess to start one. Tap Generate for a strong one.");
+          throw new Error("No journal uses this passphrase yet, and it is too easy to guess to start one. Choose Start my journal to get six strong words.");
         }
       }
       setSession({ address: k.address, signingKey: k.signingKey, contentKey: k.contentKey, contentKeyRaw: k.contentKeyRaw });
