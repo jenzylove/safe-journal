@@ -18,7 +18,8 @@ export function estimateBits(passphrase: string): number {
   const wordlist = new Set(english);
   // A passphrase made only of wordlist words is scored as words, not characters.
   if (words.length >= 2 && words.every((w) => wordlist.has(w.toLowerCase()))) {
-    return words.length * Math.log2(english.length);
+    // Only distinct words count: "love love love love love love" is one word, not six.
+    return new Set(words.map((w) => w.toLowerCase())).size * Math.log2(english.length);
   }
   let pool = 0;
   if (/[a-z]/.test(p)) pool += 26;
@@ -38,15 +39,26 @@ export function estimateBits(passphrase: string): number {
 
 export type StrengthVerdict = { ok: boolean; bits: number; reason?: string };
 
+/**
+ * Rule for STARTING a journal: six or more different words from the word list (what Start my
+ * journal generates, about 66 bits). No estimate reliably catches a guessable sentence such as
+ * "i love my two kids", and the ciphertext is public forever behind a salt every journal shares,
+ * so a new journal never starts from a phrase a person made up. Any passphrase can still OPEN a
+ * journal that already exists.
+ */
 export function checkPassphrase(passphrase: string): StrengthVerdict {
   const bits = Math.round(estimateBits(passphrase));
-  if (passphrase.trim().length < 12) return { ok: false, bits, reason: "Use at least 12 characters, or tap Generate for six words." };
-  if (bits < MIN_BITS) return { ok: false, bits, reason: "Too easy to guess. Add more words, or tap Generate." };
-  return { ok: true, bits };
+  const words = passphrase.normalize("NFKC").trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const wordlist = new Set(english);
+  const fromList = words.length > 0 && words.every((w) => wordlist.has(w));
+  if (fromList && new Set(words).size >= 6) return { ok: true, bits };
+  if (fromList) return { ok: false, bits, reason: "Use six different words. Repeated words do not count." };
+  return { ok: false, bits, reason: "New journals start with six words we generate for you. A phrase you make up is easier to guess than it looks." };
 }
 
-/** Six random words from the 2048 word list: about 66 bits. */
+/** Six different random words from the 2048 word list: about 66 bits. */
 export function generatePassphrase(words = 6, random: (n: number) => Uint32Array = (n) => crypto.getRandomValues(new Uint32Array(n))): string {
-  const r = random(words);
-  return Array.from(r, (x) => english[x % english.length]).join(" ");
+  const picked = new Set<string>();
+  while (picked.size < words) for (const x of random(words)) if (picked.size < words) picked.add(english[x % english.length]!);
+  return [...picked].join(" ");
 }

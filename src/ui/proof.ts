@@ -2,7 +2,7 @@
 // script); every status shown here is read live from Arkiv when the page opens.
 import type { Hex } from "viem";
 import evidence from "../../arkiv/evidence.json";
-import { BURN, readEntity, balanceOf, blockTime, countForeignEntries, explorerAddress, explorerEntity, explorerTx, listEntries, publicClient } from "../arkiv/journal";
+import { BURN, BLOCKS_PER_YEAR, readEntity, balanceOf, blockTime, claimsFor, creationTx, explorerAddress, explorerEntity, explorerTx, listEntries, publicClient } from "../arkiv/journal";
 import { errText, fmtTime, fromB64Url, h, link, short } from "./dom";
 import { skyBand } from "./sky";
 import { DEMO_CONTENT_KEY } from "../demo";
@@ -19,20 +19,25 @@ export function renderProof(app: HTMLElement): () => void {
 
   const rows: Row[] = [
     {
-      claim: "Entries cannot be deleted",
+      claim: "Entries cannot be deleted or changed",
       check: async () => {
         const items = await listEntries(journal, null);
         const locked = items.filter((i) => i.owner.toLowerCase() === BURN.toLowerCase()).length;
-        return { ok: items.length > 0 && locked === items.length, detail: `${locked} of ${items.length} entries owned by ${short(BURN)}`, links: items.slice(0, 4).map((i) => [short(i.key), explorerEntity(i.key)]) };
+        const ro = await Promise.all(items.map((i) => readEntity(i.key).then((e) => (e.creationFlags as { readonly: boolean }).readonly)));
+        const readonly = ro.filter(Boolean).length;
+        return { ok: items.length > 0 && locked === items.length && readonly === items.length, detail: `${locked} of ${items.length} entries owned by ${short(BURN)}, ${readonly} of ${items.length} created readonly`, links: items.slice(0, 1).map((i) => [short(i.key), explorerEntity(i.key)]) };
       },
     },
     {
       claim: "Write times come from Arkiv",
       check: async () => {
         const items = await listEntries(journal, null);
-        const it = items[0];
-        if (!it) return { ok: false, detail: "No entries found" };
-        return { ok: true, detail: `First entry written in block ${it.createdAtBlock} at ${fmtTime(await blockTime(it.createdAtBlock))}`, links: [["creating transaction", explorerTx(evidence.entries[0]!.tx as Hex)]] };
+        const it = items.find((i) => i.key.toLowerCase() === first.toLowerCase());
+        if (!it) return { ok: false, detail: "Demo entry not found" };
+        const tx = await creationTx(it.key, it.createdAtBlock);
+        const when = await blockTime(it.createdAtBlock);
+        const matches = tx?.toLowerCase() === String(evidence.entries[0]!.tx).toLowerCase();
+        return { ok: matches, detail: matches ? `Created in block ${it.createdAtBlock} at ${fmtTime(when)}, by the transaction recorded when it was written` : "The creating transaction does not match the record", links: [["creating transaction", explorerTx(evidence.entries[0]!.tx as Hex)]] };
       },
     },
     {
@@ -40,16 +45,23 @@ export function renderProof(app: HTMLElement): () => void {
       check: async () => {
         const e = await readEntity(first);
         const attrs = (e.attributes ?? {}) as Record<string, { value: unknown }>;
-        const names = Object.entries(attrs).map(([k, v]) => `${k}=${String(v.value)}`).join(", ");
-        return { ok: true, detail: `Labels: ${names || "none"}; payload ${(e.payload as Uint8Array).length} bytes of ciphertext`, links: [["open on explorer", explorerEntity(first)]] };
+        const names = Object.keys(attrs).sort();
+        const allowed = ["app", "journal", "kind", "v"];
+        const payload = e.payload as Uint8Array;
+        // format 2: 1 + 12 + 48 wrapped key, then 1 + 12 + padded body + 16 tag
+        const body = payload.length - (1 + 12 + 48) - (1 + 12 + 16);
+        const padded = [1024, 2048, 4096, 8192, 16384, 32768, 65536].includes(body);
+        const ok = names.every((n) => allowed.includes(n)) && payload[0] === 2 && padded;
+        return { ok, detail: `Public labels: ${names.join(", ")}. Contents: ${payload.length} bytes of ciphertext padded to ${body} bytes`, links: [["open on explorer", explorerEntity(first)]] };
       },
     },
     {
-      claim: "Forged entries are ignored",
+      claim: "Planted entries are rejected",
       check: async () => {
-        const n = await countForeignEntries(journal);
-        const f = await readEntity(evidence.forged.entityKey as Hex);
-        return { ok: f.creator.toLowerCase() === forger.toLowerCase() && n >= 1, detail: `Forged entry created by ${short(f.creator)}; ${n} look-alike entries from other wallets, none shown in the journal`, links: [["forged entry", explorerEntity(evidence.forged.entityKey as Hex)], ["forger wallet", explorerAddress(forger)]] };
+        const [claims, items] = await Promise.all([claimsFor(journal), listEntries(journal, null)]);
+        const planted = claims.find((c) => c.key.toLowerCase() === String(evidence.forged.entityKey).toLowerCase());
+        const leaked = items.some((i) => i.key.toLowerCase() === String(evidence.forged.entityKey).toLowerCase());
+        return { ok: !!planted && planted.creator.toLowerCase() === forger.toLowerCase() && !leaked, detail: planted ? `An entry labelled as this journal's, written by ${short(planted.creator)}, is shown as rejected and never enters the journal` : "Planted entry not found", links: [["planted entry", explorerEntity(evidence.forged.entityKey as Hex)]] };
       },
     },
     {
@@ -68,9 +80,13 @@ export function renderProof(app: HTMLElement): () => void {
     {
       claim: "Lifetimes can be extended, if allowed",
       check: async () => {
-        const e = await readEntity(first);
-        const years = (Number((e.expiresAt as bigint) - (e.createdAt as bigint)) * 2) / (365.25 * 86400);
-        return { ok: years > 2.5, detail: `Written with a 2 year lifetime; extended by ${short(supporter)}, now about ${years.toFixed(1)} years from creation`, links: [["extension transaction", explorerTx(evidence.extension.txHash as Hex)]] };
+        const [e, tx] = await Promise.all([readEntity(first), publicClient.getTransaction({ hash: evidence.extension.txHash as Hex })]);
+        const years = Number(((e.expiresAt as bigint) - (e.createdAt as bigint)) * 1000n / BLOCKS_PER_YEAR) / 1000;
+        const byOther = tx.from.toLowerCase() === supporter.toLowerCase() && tx.from.toLowerCase() !== journal.toLowerCase();
+        const fixed = (evidence.entries as { key: string; extendable?: boolean }[]).find((x) => x.extendable === false);
+        let fixedOk = true;
+        if (fixed) fixedOk = !((await readEntity(fixed.key as Hex)).creationFlags as { permissionlessExtension: boolean }).permissionlessExtension;
+        return { ok: byOther && years > 2.5 && fixedOk, detail: `Written for 2 years, kept longer by another wallet (${short(tx.from)}): now about ${years.toFixed(1)} years. An entry written without permission cannot be extended`, links: [["extension transaction", explorerTx(evidence.extension.txHash as Hex)]] };
       },
     },
     {

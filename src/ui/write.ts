@@ -1,12 +1,13 @@
 import { blockTime, getOne, LIFETIMES, writeEntry, type LifetimeYears } from "../arkiv/journal";
 import { CATEGORIES, type Category } from "../lib";
 import { getSession } from "../session";
-import { CATEGORY_LABELS, errText, fmtTime, h, go } from "./dom";
+import { CATEGORY_LABELS, errText, fmtTime, h, link, go } from "./dom";
 import { skyBand } from "./sky";
 import { preparePhoto } from "./photo";
 import { ensureFunded } from "./fund";
 
 const MAX_TEXT = 8000;
+const FAUCET = "https://hub.arkiv.network/faucet";
 
 function localNow(): string {
   const d = new Date();
@@ -32,6 +33,9 @@ export function renderWrite(app: HTMLElement): () => void {
   const photo = h("input", { type: "file", id: "photo", accept: "image/*" });
   const extendable = h("input", { type: "checkbox", id: "extendable" });
   const status = h("p", { id: "write-status", role: "status" });
+  // Shown only when the automatic top up fails: the person can pay for their own journal instead.
+  const selfFund = h("p", { class: "hint", id: "self-fund" });
+  selfFund.hidden = true;
   const submit = h("button", { type: "submit", id: "save-btn" }, "Save entry");
 
   const form = h(
@@ -53,7 +57,30 @@ export function renderWrite(app: HTMLElement): () => void {
     h("p", { class: "hint" }, "The photo is made smaller on this device and its hidden details, such as location, are removed."),
     h("div", { class: "actions" }, submit),
     status,
+    selfFund,
   );
+
+  function showSelfFund(): void {
+    const copy = h("button", { type: "button", class: "addr-copy" }, "Copy address");
+    copy.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(s!.address);
+        copy.textContent = "Copied";
+      } catch {
+        copy.textContent = "Select and copy it by hand";
+      }
+    });
+    selfFund.replaceChildren(
+      "You can also fund this journal yourself: send a little test GLM to ",
+      h("span", { class: "addr" }, s!.address),
+      " ",
+      copy,
+      " from ",
+      link(FAUCET, FAUCET),
+      ".",
+    );
+    selfFund.hidden = false;
+  }
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -72,6 +99,7 @@ export function renderWrite(app: HTMLElement): () => void {
     }
     submit.disabled = true;
     status.className = "";
+    selfFund.hidden = true;
     try {
       let prepared: { bytes: Uint8Array; mime: string } | undefined;
       const file = photo.files?.[0];
@@ -79,7 +107,12 @@ export function renderWrite(app: HTMLElement): () => void {
         status.textContent = "Preparing your photo...";
         prepared = await preparePhoto(file);
       }
-      await ensureFunded(s.address, (m) => (status.textContent = m));
+      try {
+        await ensureFunded(s.address, (m) => (status.textContent = m));
+      } catch (fundErr) {
+        showSelfFund();
+        throw fundErr;
+      }
       status.textContent = "Saving...";
       const r = await writeEntry(
         s.signingKey,

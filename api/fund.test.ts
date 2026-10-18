@@ -32,3 +32,14 @@ describe("fund endpoint", () => {
     expect(allow("9.9.9.9", now + 3_600_001)).toBe(true);
   });
 });
+
+import { mayFund, LOW } from "./fund";
+describe("who may be topped up", () => {
+  it("funds a brand new address once, then only after real writes", () => {
+    expect(mayFund(0n, 0, 0).ok).toBe(true);
+    expect(mayFund(LOW, 0, 0).ok).toBe(false);
+    expect(mayFund(0n, 1, 0).ok).toBe(false); // spent its GLM elsewhere, replays the proof: nothing
+    expect(mayFund(0n, 4, 3).ok).toBe(true); // wrote three entries, ran low
+    expect(mayFund(0n, 9, 3).ok).toBe(false); // most of its transactions are not writes
+  });
+});

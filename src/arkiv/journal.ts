@@ -48,18 +48,35 @@ async function withTimeout<T>(p: Promise<T>, what: string, ms = READ_TIMEOUT_MS)
 }
 
 // One retry only: a rate-limited read should fail fast with a clear message, not back off for minutes.
-export const publicClient = createPublicClient({
-  chain: tiramisu,
-  transport: http(RPC_HTTP, {
-    retryCount: 1,
-    onFetchResponse(res) {
-      if (res.status === 429) {
-        const secs = Number(res.headers.get("retry-after"));
-        limitedUntil = Date.now() + (Number.isFinite(secs) && secs > 0 ? secs * 1000 : 30 * 60_000);
-      }
-    },
-  }),
-});
+function makePublic(url: string) {
+  return createPublicClient({
+    chain: tiramisu,
+    transport: http(url, {
+      retryCount: 1,
+      onFetchResponse(res) {
+        if (res.status === 429) {
+          const secs = Number(res.headers.get("retry-after"));
+          limitedUntil = Date.now() + (Number.isFinite(secs) && secs > 0 ? secs * 1000 : 30 * 60_000);
+        }
+      },
+    }),
+  });
+}
+let rpcUrl = RPC_HTTP;
+export let publicClient = makePublic(RPC_HTTP);
+
+/**
+ * Point reads (and writes) at another Arkiv node, for the standalone reader: if our default node
+ * is blocked or gone, any Tiramisu node URL works. Kept in memory only.
+ */
+export function setRpc(url: string): void {
+  const u = new URL(url);
+  if (u.protocol !== "https:" && u.protocol !== "http:") throw new Error("Use an http or https node address.");
+  rpcUrl = u.toString();
+  publicClient = makePublic(rpcUrl);
+  cache.clear();
+  limitedUntil = 0;
+}
 
 /** Reads are costly on the public RPC, so the same query is answered from memory for a short while. */
 const CACHE_MS = 60_000;
@@ -79,7 +96,7 @@ let wsClient: ReturnType<typeof createPublicClient> | undefined;
 function ws() { return (wsClient ??= createPublicClient({ chain: tiramisu, transport: webSocket(RPC_WS) })); }
 
 export function walletFor(signingKey: Hex) {
-  return createWalletClient({ chain: tiramisu, transport: http(RPC_HTTP), account: privateKeyToAccount(signingKey) });
+  return createWalletClient({ chain: tiramisu, transport: http(rpcUrl), account: privateKeyToAccount(signingKey) });
 }
 
 export type WriteResult = { entityKey: Hex; photoKey?: Hex; txHash: Hex };
@@ -94,7 +111,7 @@ export function writeEntry(signingKey: Hex, contentKey: CryptoKey, entry: Omit<E
 }
 
 async function doWrite(signingKey: Hex, contentKey: CryptoKey, entry: Omit<EntryV1, "photo">, lifetime: LifetimeYears, photo?: { bytes: Uint8Array; mime: string }, extendable = false): Promise<WriteResult> {
-  if (!LIFETIMES.includes(lifetime)) throw new Error("lifetime must be 1, 2 or 5 years");
+  if (!LIFETIMES.includes(lifetime)) throw new Error("lifetime must be 1, 2, 5 or 10 years");
   const wallet = walletFor(signingKey);
   const owner = wallet.account.address;
   const count = photo ? 2 : 1;
@@ -102,8 +119,12 @@ async function doWrite(signingKey: Hex, contentKey: CryptoKey, entry: Omit<Entry
   const entryKey = predicted[0]!;
   const photoKey = predicted[1];
   const expires = ExpirationTime.fromYears(lifetime);
-  // Only the person decides whether anyone else may extend this entry's lifetime.
-  const flags = { permissionlessExtension: extendable };
+  // readonly: the payload and attributes can never be patched. permissionlessExtension: only the
+  // person decides whether anyone else may extend this entry's lifetime.
+  const flags = { readonly: true, permissionlessExtension: extendable };
+  // `journal` repeats the creator as a plain label. It is there so the app can show entries that
+  // CLAIM to belong to a journal but were written by someone else (see claimsFor).
+  const journal = owner.toLowerCase();
 
   const creates = [];
   let full: EntryV1 = { ...entry };
@@ -112,10 +133,10 @@ async function doWrite(signingKey: Hex, contentKey: CryptoKey, entry: Omit<Entry
     const sealedPhoto = await seal(await importEntryKey(entryKeyRaw), photo.bytes, aad("photo", photoKey.key, 0), false);
     if (sealedPhoto.length > MAX_PHOTO_BYTES + 64) throw new Error("photo too large after compression");
     full = { ...full, photo: { mime: photo.mime, size: photo.bytes.length, sha256: await sha256Hex(photo.bytes), parts: [photoKey.key] } };
-    creates.push({ payload: sealedPhoto, contentType: "application/octet-stream" as const, attributes: { app: APP, kind: "photo", v: 1, part: 0, of: 1 }, expires, flags, salt: photoKey.salt });
+    creates.push({ payload: sealedPhoto, contentType: "application/octet-stream" as const, attributes: { app: APP, kind: "photo", v: 1, part: 0, of: 1, journal }, expires, flags, salt: photoKey.salt });
   }
   const sealedEntry = await sealEntryV2(contentKey, entryKeyRaw, full, entryKey.key);
-  creates.unshift({ payload: sealedEntry, contentType: "application/octet-stream" as const, attributes: { app: APP, kind: "entry", v: 1 }, expires, flags, salt: entryKey.salt });
+  creates.unshift({ payload: sealedEntry, contentType: "application/octet-stream" as const, attributes: { app: APP, kind: "entry", v: 1, journal }, expires, flags, salt: entryKey.salt });
   const keys = photo && photoKey ? [entryKey.key, photoKey.key] : [entryKey.key];
 
   const r = await wallet.executeBatch({ creates, ownershipChanges: keys.map((entityKey) => ({ entityKey, newOwner: BURN })) });
@@ -240,4 +261,40 @@ export const explorerAddress = (a: Hex) => `${EXPLORER}/address/${a}`;
 /** One entity, read through the short cache (used by the proof page, which shows the same entity twice). */
 export function readEntity(key: Hex) {
   return cached(`entity:${key.toLowerCase()}`, () => withTimeout(publicClient.getEntity(key), "reading an entity"));
+}
+
+/** Blocks in a year at Arkiv's 2 second block time. */
+export const BLOCKS_PER_YEAR = BigInt(Math.round((365.25 * 86400) / 2));
+
+/**
+ * Lifetime Extension by someone other than the journal (a lawyer or advocate). Only works for
+ * entries the person created as extendable; the chain refuses the rest. `payerKey` is a throwaway
+ * key that only pays gas; it never needs the journal's keys.
+ */
+export async function extendEntry(payerKey: Hex, entityKey: Hex, addYears = 1): Promise<{ txHash: Hex; expiresAt: bigint }> {
+  const e = await withTimeout(publicClient.getEntity(entityKey), "reading the entry");
+  const flags = e.creationFlags as { permissionlessExtension: boolean };
+  if (!flags.permissionlessExtension) throw new Error("The person who wrote this entry did not allow it to be kept longer.");
+  const expiresAt = (e.expiresAt as bigint) + BLOCKS_PER_YEAR * BigInt(addYears);
+  const r = await walletFor(payerKey).extendEntity({ entityKey, expires: ExpirationTime.atBlock(expiresAt) });
+  await publicClient.waitForTransactionReceipt({ hash: r.txHash });
+  forgetReads();
+  return { txHash: r.txHash, expiresAt };
+}
+
+export type Claim = { key: Hex; creator: Hex; createdAtBlock: bigint; text: string | null };
+
+/**
+ * Entries that carry this journal's label but were written by another wallet: planted entries,
+ * such as a fake "I made it all up". The label is writable by anyone; only $creator is not, so the
+ * journal never includes these. Returned so the lawyer view can show them as rejected.
+ */
+export function claimsFor(address: Hex): Promise<Claim[]> {
+  const me = address.toLowerCase();
+  return cached(`claims:${me}`, async () => {
+    const page = await withTimeout(publicClient.select({ key: true, creator: true, createdAt: true, contentType: true, payload: true }).where([eq("app", APP), eq("kind", "entry"), eq("journal", me)]).limit(50).fetch(), "checking for planted entries");
+    return page.entities
+      .filter((e) => e.creator.toLowerCase() !== me)
+      .map((e) => ({ key: e.key as Hex, creator: e.creator as Hex, createdAtBlock: e.createdAt as bigint, text: String(e.contentType).startsWith("text/") ? new TextDecoder().decode(e.payload as Uint8Array).slice(0, 280) : null }));
+  });
 }

@@ -6,7 +6,6 @@ import { skyBand } from "./sky";
 import { ensureFunded } from "./fund";
 
 const DEFAULT_NOTES = ["Pick up bread and tomatoes on the way home", "Call mum on Sunday evening", "Pay the light bill before Friday"];
-const DAY_MS = 86_400_000;
 
 export function renderDecoy(app: HTMLElement): () => void {
   if (!getSession()) {
@@ -55,8 +54,8 @@ export function renderDecoy(app: HTMLElement): () => void {
         if (!text) continue;
         n++;
         say(`Saving note ${n}...`);
-        const happenedAt = new Date(Date.now() - (3 - i) * DAY_MS).toISOString();
-        await writeEntry(decoy.signingKey, decoy.contentKey, { v: 1, happenedAt, category: "other", text }, 1);
+        // The time the note is written, never an earlier one: a backdated note would not match the chain.
+        await writeEntry(decoy.signingKey, decoy.contentKey, { v: 1, happenedAt: new Date().toISOString(), category: "other", text }, 1);
       }
       status.textContent = "";
       form.hidden = true;
@@ -73,6 +72,7 @@ export function renderDecoy(app: HTMLElement): () => void {
 
   done.append(
     h("p", { class: "ok" }, "Your everyday journal is ready. Opening it with those six words shows only these notes."),
+    h("p", { class: "hint" }, "To make it look lived in, open it now and then and add an ordinary note."),
     h("p", {}, h("a", { href: "#/journal", class: "button" }, "Back to my journal")),
   );
   area.append(box, h("p", {}, "Learn these six words too. Use them only if you are forced."), form, done);
@@ -82,7 +82,7 @@ export function renderDecoy(app: HTMLElement): () => void {
       h(
         "p",
         {},
-        "If someone forces you to open your journal, you can give them a different passphrase. It opens a separate journal of ordinary notes, and your real one stays closed. Nothing on the outside shows that two journals exist.",
+        "If someone forces you to open your journal, you can give them a different passphrase. It opens a separate journal of ordinary notes, and your real one stays closed. Nothing on Arkiv links the two journals.",
       ),
     ),
     h("div", { class: "actions" }, show),

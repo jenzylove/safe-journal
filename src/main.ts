@@ -15,6 +15,7 @@ import { renderStart } from "./ui/start";
 import { renderDecoy } from "./ui/decoy";
 import { mountFooter } from "./ui/footer";
 import { initMotion } from "./ui/motion";
+import { startAutoLock } from "./ui/lock";
 
 const screens: Record<string, (app: HTMLElement) => () => void> = {
   "#/": renderLanding,
@@ -112,5 +113,6 @@ document.addEventListener("click", (e) => {
 mountHeader();
 mountFooter();
 initMotion();
+startAutoLock();
 if (!location.hash) go("#/");
 render();

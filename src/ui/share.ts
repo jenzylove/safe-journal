@@ -11,13 +11,16 @@ function linkBox(title: string, url: string, note: string): HTMLElement {
   btn.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(url);
+      // Leave nothing highlighted on screen once the link is copied.
+      window.getSelection()?.removeAllRanges();
+      field.setSelectionRange(0, 0);
       msg.textContent = "Copied.";
     } catch {
       field.select();
       msg.textContent = "Could not copy automatically. The link is selected, copy it by hand.";
     }
   });
-  return h("section", { class: "share-link" }, h("h2", {}, title), h("p", {}, note), field, h("div", { class: "actions" }, btn, msg));
+  return h("section", { class: "share-link" }, h("h2", {}, title), h("p", {}, note), field, h("div", { class: "actions" }, btn, msg), h("p", { class: "hint" }, "After you send it, delete the message from your own phone, and clear your clipboard."));
 }
 
 export function renderShare(app: HTMLElement): () => void {

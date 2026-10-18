@@ -1,0 +1,10 @@
+11:22:49 OK   batch: readonly + permissionlessExtension + handoff to burn 0x947f3d957ba7a23db88edeb8c8bd0b923b35012175da2c88bcb72d31a69a5e67
+11:22:49 read back {
+  owner: '0x000000000000000000000000000000000000dEaD',
+  flags: { readonly: true, permissionlessExtension: true, raw: 3 },
+  expiresAt: 866009n
+}
+11:23:02 OK   stranger extends a readonly burn-owned entry 0x27c8b196ba2be5270b6e34c139e217f78860c82f29be46f4bfee6c00e7a5bcb7
+11:23:03 expiresAt after 867009n
+11:23:03 journal attribute query found 1
+11:23:04 balance 4.687135237968270476

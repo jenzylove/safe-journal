@@ -4,7 +4,7 @@ import type { Hex } from "viem";
 import { balanceOf } from "../arkiv/journal";
 import { solvePow } from "../lib/pow";
 
-export const MIN_BALANCE = 1_000_000_000_000_000n; // 0.001 GLM
+export const MIN_BALANCE = 3_000_000_000_000_000n; // 0.003 GLM, enough for one write with the largest photo
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export async function ensureFunded(address: Hex, say: (msg: string) => void): Promise<void> {

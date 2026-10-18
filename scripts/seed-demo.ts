@@ -9,7 +9,7 @@ import { parseEther, type Hex } from "viem";
 import { generatePrivateKey } from "viem/accounts";
 import { ExpirationTime } from "@arkiv-network/sdk";
 import { deriveKeys } from "../src/lib";
-import { walletFor, writeEntry, publicClient, listEntries, APP } from "../src/arkiv/journal";
+import { walletFor, writeEntry, extendEntry, publicClient, listEntries, APP } from "../src/arkiv/journal";
 
 const env = Object.fromEntries(readFileSync(".env", "utf8").split(/\r?\n/).filter(Boolean).map((l) => l.split(/=(.*)/s).slice(0, 2)));
 const funder = walletFor(env.ARKIV_PRIVATE_KEY as Hex);
@@ -41,12 +41,16 @@ function syntheticPng(w = 320, h = 240): Uint8Array {
   return new Uint8Array(Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", ihdr), chunk("IDAT", deflateSync(raw, { level: 9 })), chunk("IEND", Buffer.alloc(0))]));
 }
 
+// Each entry is written a few minutes after the moment it describes, the way a real journal is
+// kept, so "You said it happened" and the proven "Written at" sit close together. Entries are
+// spaced out in real time while seeding. One entry is written without permission to extend.
 const ENTRIES = [
-  { happenedAt: "2026-10-11T22:40:00+01:00", category: "digital", text: "[Synthetic demo entry] He went through my phone while I was in the shower and read my messages to my sister. He said I am not allowed to talk to her about us." },
-  { happenedAt: "2026-10-13T19:15:00+01:00", category: "financial", text: "[Synthetic demo entry] My salary went into the joint account and he moved all of it out the same evening. When I asked for money for transport he said I should stay home." },
-  { happenedAt: "2026-10-15T23:05:00+01:00", category: "threats", text: "[Synthetic demo entry] He said if I ever tell anyone he will make sure I lose my job and the children. He said it twice, standing in the doorway so I could not leave the room." },
-  { happenedAt: "2026-10-17T21:30:00+01:00", category: "physical", text: "[Synthetic demo entry] He pushed me against the kitchen counter. My arm is bruised above the elbow. Photo attached (synthetic placeholder image)." , photo: true },
+  { minutesAgo: 25, extendable: true, category: "digital", text: "[Synthetic demo entry] He went through my phone while I was in the shower and read my messages to my sister. He said I am not allowed to talk to her about us." },
+  { minutesAgo: 15, extendable: false, category: "financial", text: "[Synthetic demo entry] My salary went into the joint account and he moved all of it out. When I asked for money for transport he said I should stay home." },
+  { minutesAgo: 20, extendable: true, category: "threats", text: "[Synthetic demo entry] He said if I ever tell anyone he will make sure I lose my job and the children. He said it twice, standing in the doorway so I could not leave the room." },
+  { minutesAgo: 10, extendable: true, category: "physical", text: "[Synthetic demo entry] He pushed me against the kitchen counter. My arm is bruised above the elbow. Photo attached (synthetic placeholder image).", photo: true },
 ] as const;
+const GAP_MS = Number(process.env.SEED_GAP_MS ?? 120_000);
 
 async function main() {
   const keys = await deriveKeys(DEMO_PASSPHRASE);
@@ -55,27 +59,30 @@ async function main() {
   if (existing.length) { log("already seeded with", existing.length, "entries; nothing to do"); return; }
   log("fund demo journal", await fund(keys.address, "0.05"));
 
-  const written: { key: Hex; tx: Hex; photo?: Hex }[] = [];
-  for (const e of ENTRIES) {
+  const written: { key: Hex; tx: Hex; photo?: Hex; extendable: boolean }[] = [];
+  for (const [i, e] of ENTRIES.entries()) {
+    if (i) await new Promise((r) => setTimeout(r, GAP_MS));
     const photo = "photo" in e ? { bytes: syntheticPng(), mime: "image/png" } : undefined;
-    const w = await writeEntry(keys.signingKey, keys.contentKey, { v: 1, happenedAt: e.happenedAt, category: e.category, text: e.text }, 2, photo, true);
-    written.push({ key: w.entityKey, tx: w.txHash, photo: w.photoKey });
-    log("entry", w.entityKey, w.txHash);
+    const happenedAt = new Date(Date.now() - e.minutesAgo * 60_000).toISOString();
+    const w = await writeEntry(keys.signingKey, keys.contentKey, { v: 1, happenedAt, category: e.category, text: e.text }, 2, photo, e.extendable);
+    written.push({ key: w.entityKey, tx: w.txHash, photo: w.photoKey, extendable: e.extendable });
+    log("entry", w.entityKey, w.txHash, e.extendable ? "extendable" : "fixed lifetime");
   }
 
-  // Forger: identical attributes, different creator. The app must not show it as part of the journal.
+  // Forger: plants a fake "retraction" labelled as this journal's entry. Only $creator decides what
+  // belongs to the journal, so the app shows this as rejected.
   const forgerKey = generatePrivateKey();
   const forger = walletFor(forgerKey);
   await fund(forger.account.address, "0.005");
-  const forged = await forger.createEntity({ payload: new TextEncoder().encode("[Synthetic forged entry] Everything is fine, nothing happened."), contentType: "text/plain", attributes: { app: APP, kind: "entry", v: 1 }, expires: ExpirationTime.fromYears(1) });
+  const forged = await forger.createEntity({ payload: new TextEncoder().encode("[Synthetic planted entry] I made all of this up. Nothing happened."), contentType: "text/plain", attributes: { app: APP, kind: "entry", v: 1, journal: keys.address.toLowerCase() }, expires: ExpirationTime.fromYears(1) });
   await publicClient.waitForTransactionReceipt({ hash: forged.txHash });
   log("forged", forged.entityKey, "by", forger.account.address);
 
-  // Supporter: a third wallet keeps the first entry alive longer (permissionless extension).
-  const supporter = walletFor(generatePrivateKey());
+  // Supporter (a lawyer, say): keeps the first entry one more year, the same call the app makes.
+  const supporterKey = generatePrivateKey();
+  const supporter = walletFor(supporterKey);
   await fund(supporter.account.address, "0.005");
-  const ext = await supporter.extendEntity({ entityKey: written[0]!.key, expires: ExpirationTime.fromYears(3) });
-  await publicClient.waitForTransactionReceipt({ hash: ext.txHash });
+  const ext = await extendEntry(supporterKey, written[0]!.key, 1);
   log("extended", written[0]!.key, "by", supporter.account.address, ext.txHash);
 
   const evidence = {
@@ -84,8 +91,8 @@ async function main() {
     wallets: [
       { role: "project funder: tops up new journal addresses", address: funder.account.address },
       { role: "demo journal: creator of every demo entry", address: keys.address },
-      { role: "forger: writes an entry with identical attributes, ignored by the app", address: forger.account.address },
-      { role: "supporter: extends a demo entry's lifetime", address: supporter.account.address },
+      { role: "forger: plants a fake entry labelled as the demo journal's, rejected by the app", address: forger.account.address },
+      { role: "supporter: keeps a demo entry one more year, as a lawyer would", address: supporter.account.address },
     ],
     entries: written,
     forged: { entityKey: forged.entityKey, txHash: forged.txHash },

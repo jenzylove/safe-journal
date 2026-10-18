@@ -148,7 +148,7 @@ export function renderLanding(app: HTMLElement): () => void {
       point("The time is proven.", "Each entry is stamped with the moment it reached Arkiv, a public record nobody controls. Not your phone's clock, and not ours."),
       point("Nobody can delete it.", "Not you under pressure, not someone holding your phone, not us."),
       point("It outlives this website.", "If this site ever disappears, a single file reader still opens your journal."),
-      point("Only you can read it.", "The public record shows locked data and nothing about you."),
+      point("Only you can read it.", "The public record shows locked data: never your words, photos or names. What it does show is set out plainly in our threat model."),
     ),
     h(
       "section",
@@ -157,7 +157,7 @@ export function renderLanding(app: HTMLElement): () => void {
       h(
         "p",
         {},
-        "You can set up a second passphrase that opens an everyday journal of ordinary notes. Your real journal stays closed, and nothing shows that it exists.",
+        "You can set up a second passphrase that opens an everyday journal of ordinary notes. Your real journal stays closed, and nothing on Arkiv links the two journals.",
       ),
       h("p", {}, h("a", { href: "#/start" }, "Set one up after you start")),
     ),

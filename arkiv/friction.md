@@ -70,3 +70,44 @@ Arkiv surfaces used while building Safe Journal. SDK `@arkiv-network/sdk` 0.8.1,
 - **Expected:** a key that only ever exists in a browser tab can write, read and watch without any server of ours in the data path.
 - **Actual:** on production, a fresh passphrase was funded with 0.02 GLM by our endpoint, wrote an entry plus photo in one batch (10.6 s from tap to proven time), read it back decrypted, and received it over the WebSocket watch. The page left nothing in localStorage, sessionStorage, IndexedDB, Cache Storage or cookies.
 - **Repro:** open https://safe-journal-seven.vercel.app in a private window, Generate, Open journal, write an entry with a photo.
+
+## F10. The anonymous read budget locks a connection out for about 30 minutes, and through viem it first looks like a hang
+
+- **Surface:** public JSON-RPC (`arkiv_query`), TypeScript SDK over viem `http()`
+- **Versions:** SDK 0.8.1, viem 2.x, Tiramisu, 18 Oct 2026
+- **Expected:** a documented per connection budget, and a query that fails fast with a clear "budget used, resets in N minutes" error.
+- **Actual:** after a few hours of normal end to end testing from one connection (each test opens journals, lists entries, renders the proof page), every `arkiv_query` returned `429` with body `ANON_COST_LIMITED` and `retry-after: 1952` (seconds), then 470 a little later. `eth_blockNumber` still answered `200`. With viem's default retries the first symptom in the app was a screen stuck on "Reading the journal" rather than an error.
+- **Repro:** `curl -s -D - -X POST https://rpc.tiramisu.db-chain.testnet.arkiv.network -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"arkiv_query","params":["app = \"safejournal\"",{"resultsPerPage":"0x1"}]}'` repeated from one connection until the budget is spent; read `retry-after`.
+- **What we did:** `retryCount: 1`, an `onFetchResponse` hook that reads `retry-after`, a 60 second in tab cache of identical queries, and a plain "Arkiv is limiting reads from this connection for about N minutes" message (`src/arkiv/journal.ts`).
+- **Fix:** document the budget and the cost of one query next to the RPC URL, and have the SDK throw a typed rate limit error carrying `retry-after`.
+
+## F11. The faucet can only fund the wallet connected in a browser
+
+- **Surface:** Hub faucet (`hub.arkiv.network/faucet`)
+- **Expected:** fund an address that only exists inside an app, the way most testnet faucets take a pasted address.
+- **Actual:** the faucet needs a connected wallet and a Sign In With Ethereum signature, then a human check. A journal key derived from a passphrase inside a browser tab cannot do that, so the app needs its own funding endpoint, which puts a server back in the write path. Our own first claim also landed in the connected MetaMask account instead of the address we meant, because the "Send to" field was left empty; the GLM then had to be sent on manually.
+- **Repro:** open the faucet with no wallet extension; then with one, claim without filling "Send to".
+- **Fix:** a paste an address mode (with the same human check), or sponsored writes.
+
+## F12. Expiry removes an entity from state but not its payload from chain history
+
+- **Surface:** Entity Expiration (docs)
+- **Expected:** a clear note that expired payloads remain readable in transaction calldata, because privacy designs depend on it.
+- **Actual:** the docs describe expiry as data going away. The creating transaction still carries the payload, which the hackathon's own "evidence that survives expiry" gate relies on. We state it in our schema and threat model and never rely on expiry for privacy.
+- **Fix:** one sentence in the Entity Expiration docs.
+
+## F13. `readonly` alone does not stop the owner deleting; we combine it with a burn address owner
+
+- **Surface:** creation flags
+- **Expected:** a flag that makes an entity permanent until expiry.
+- **Actual:** `readonly` stops patches, but the owner can still delete. To make entries undeletable we hand ownership to `0x…dEaD` in the creating batch and set `readonly` too (spike 6: both flags plus the handoff in one batch, tx `0x947f3d957ba7a23db88edeb8c8bd0b923b35012175da2c88bcb72d31a69a5e67`; a stranger could still extend it because `permissionlessExtension` was set). Other builders report the same surprise.
+- **Repro:** `node spikes/spike6-readonly.mjs`.
+- **Fix:** document the pattern, or add an "undeletable" flag.
+
+## F14. Entity events carry no creator and no attributes
+
+- **Surface:** `watchEntityEvents`
+- **Expected:** enough on the event to decide whether it matters without a read.
+- **Actual:** `EntityCreated` carries `owner` but not `creator` or attributes. Because we hand entries to the burn address in the creating batch, we rely on `owner` on the create event still being the journal (the handoff arrives as a separate `OwnershipTransferred` event), then fetch only matching entities. Without that ordering detail a live view would need one read per event chain wide.
+- **Repro:** `node spikes/spike5-live-events.mjs` and look at the event fields.
+- **Fix:** add `creator` (and optionally attributes) to `EntityCreated`.

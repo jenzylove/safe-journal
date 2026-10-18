@@ -35,8 +35,10 @@ describe("strength", () => {
     expect(estimateBits(p)).toBeGreaterThanOrEqual(66);
     expect(checkPassphrase(p).ok).toBe(true);
   });
-  it("accepts a long mixed passphrase", () => {
-    expect(checkPassphrase("Blue kettle on Ikeja road, 4 cups!").ok).toBe(true);
+  it("refuses repeated words and made up phrases for a new journal", () => {
+    for (const p of ["love love love love love love", "abandon abandon abandon abandon abandon abandon", "password password password", "Lagos2024Lagos2024", "i love my two kids", "MyDaughterIsSafe2024!", "Blue kettle on Ikeja road, 4 cups!"])
+      expect(checkPassphrase(p).ok, p).toBe(false);
+    expect(checkPassphrase("Term canoe RAW color letter echo").ok).toBe(true);
   });
 });
 

@@ -51,25 +51,42 @@ About one in three women worldwide has experienced physical or sexual violence, 
 4. **Share when you are ready.** Every entry has its own key. A link for your lawyer opens only the entries you choose, with a printable timeline of proven times, creating transactions and lifetimes. The key leaves the address bar the moment the page loads.
 5. **It outlives this website.** A single file reader opens any journal straight from Arkiv.
 
-If someone forces you to open your journal, a second passphrase opens an everyday journal of ordinary notes instead. Nothing on the outside shows that two journals exist.
+If someone forces you to open your journal, a second passphrase opens an everyday journal of ordinary notes instead. Nothing on Arkiv links the two journals.
 
 Entries live exactly as long as you choose (1, 2, 5 or 10 years). Only if you tick "Let my lawyer keep this entry longer" can anyone extend one.
 
 ## Why only on Arkiv
 
-On a normal server, the write time is our word and the evidence dies when we do. Arkiv gives this product what it cannot have anywhere else at once: the block time as the proof of when, `$creator` as the proof of who, ownership by a burn address so entries are undeletable, `createdBy` queries so forged look alike entries never enter a journal, lifetimes the person chooses that anyone can extend, and data that is readable without any server of ours.
+Safe Journal needs one record with three properties at once, and Arkiv is the only place we found all three.
+
+1. **Anyone can read it by its proven author, across years, with no server.** `createdBy(journal)` is the whole read path of the app, the lawyer view and the one file reader. It goes straight to an Arkiv node: no indexer, no API of ours, nothing to shut down.
+2. **Nobody can delete or edit it.** The creating batch hands every entry to `0x…dEaD` and marks it `readonly`, in the same transaction. Not us, not the person under pressure, not someone holding her phone.
+3. **It lives for a lifetime she picks, which nobody can shorten, and which her lawyer can extend without any key, but only if she allowed it.** That is Entity Expiration plus Lifetime Extension with the permissionless flag set per entry, a rule the chain itself enforces.
+
+Take Arkiv away and the product falls apart:
+
+| Instead of Arkiv | What breaks |
+|---|---|
+| Our own server or Postgres | The write time is our word, we can delete, and the evidence dies with us. One evidence app for survivors already shut down and told users to move their data out themselves |
+| A timestamping service (OpenTimestamps) | The time is proven, but the evidence itself stays on the phone that gets checked, or with an operator |
+| Arweave or IPFS | Arweave never lets a closed case drop out of the public record, and reads go through a gateway's indexer. IPFS has no time, no queries and needs someone to pin |
+| A plain EVM contract with events | Reading one journal by author across years runs into the block range limits public nodes put on `getLogs`, so someone has to run an indexer, which is a server that can vanish. There is no lifetime and no third party extension either |
+
+Cost: an entry costs about 0.0001 test GLM, an entry with a full size photo about 0.002 (measured on Tiramisu, see `docs/spikes`).
+
+Kept off Arkiv on purpose: the passphrase, every key, all plaintext, the original photo and its metadata, and anything that identifies the person. One honest line: when an entry expires it leaves Arkiv's state, but its ciphertext stays in the chain's history, so privacy rests on the key, never on expiry.
+
+### Every Arkiv feature, and what the person sees
 
 | Arkiv feature | What the person sees |
 |---|---|
-| Atomic `executeBatch` with `ownershipChanges` | "Owner: burn address, cannot be deleted" on every entry, from the first second |
+| Atomic `executeBatch` with `ownershipChanges` and the `readonly` flag | "Owner: burn address, cannot be deleted" on every entry, from the first second; nothing can be edited |
 | `$createdAt` block | "Sealed · block #…" and "Written at" next to "You said it happened" |
-| `createdBy(journal)` | A forged entry with identical labels is shown as not part of the journal |
+| `createdBy(journal)` vs the writable `journal` label | A planted "I made it all up" entry carrying the journal's label is shown under "Not from this journal" as rejected |
 | Entity Expiration, chosen per entry | "How long to keep it": 1, 2, 5 or 10 years, and nobody can shorten it |
-| `permissionlessExtension`, opt in | "Let my lawyer keep this entry longer": off unless the person ticks it |
+| `permissionlessExtension` (opt in) and `extendEntity` | "Let my lawyer keep this entry longer" when writing; "Keep this entry one more year" in the lawyer view, paid by a throwaway key |
 | Attributes vs payload | The explorer shows three labels and ciphertext, nothing about the person |
-| `watchEntityEvents` over WebSocket | New entries appear in an open journal without a refresh |
-
-Kept off Arkiv on purpose: the passphrase, every key, all plaintext, the original photo, and anything that identifies the person.
+| `watchEntityEvents` over WebSocket | New entries appear in an open journal and in an open lawyer view without a refresh |
 
 ## What is live
 
@@ -77,11 +94,11 @@ Kept off Arkiv on purpose: the passphrase, every key, all plaintext, the origina
 |---|---|
 | App, every screen | Live at [safe-journal-seven.vercel.app](https://safe-journal-seven.vercel.app) |
 | Writes, reads, live updates | Arkiv Tiramisu testnet (chain 7738577), from the browser |
-| Funding new journals | A small endpoint tops up a journal address with test GLM after a proof of work on the device. It receives an address, nothing else |
+| Funding new journals | A small endpoint tops up a journal address with test GLM after a proof of work on the device. New addresses get one top up; refills only after real writes. It receives an address and the proof; the connection address is used for a rate limit in memory and never stored. Anyone can also fund a journal from the public faucet |
 | Demo journal | Synthetic entries, a forged look alike and a third party extension, all on chain ([evidence](arkiv/evidence.json)) |
 | Tests | Unit tests, a real chain integration test, and Playwright tests of the live flows |
 
-Safe Journal runs on Arkiv's testnet, and all data in this repository and the demo is synthetic. A seal proves when an entry was written, not what happened; courts weigh it alongside other evidence.
+Safe Journal runs on Arkiv's testnet, and all data in this repository and the demo is synthetic. A proven time shows when an entry was written, not what happened; courts weigh it alongside other evidence. What the public record does and does not reveal is set out in the [threat model](SECURITY.md#threat-model).
 
 ## Run it
 

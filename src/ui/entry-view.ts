@@ -10,6 +10,7 @@ import {
   type JournalItem,
 } from "../arkiv/journal";
 import { CATEGORY_LABELS, errText, fmtTime, h, link, short } from "./dom";
+import { keepControl } from "./extend";
 
 const photoUrls = new Set<string>();
 /** Frees every picture shown so far. Called when leaving a screen. */
@@ -31,7 +32,7 @@ function row(label: string, value: Node | string): HTMLElement {
 }
 
 /** Thousands separated with a thin space, like 728 893. */
-function spaced(n: bigint): string {
+export function spaced(n: bigint): string {
   return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 }
 
@@ -103,8 +104,10 @@ export function renderEntry(item: JournalItem, contentKey: CryptoKey | null, now
   const locked = item.owner.toLowerCase() === BURN.toLowerCase();
   dl.append(row("Owner", locked ? "Burn address, cannot be deleted" : `Not locked. Owner: ${item.owner}`));
   if (full) dl.append(row("Written by", link(explorerAddress(item.creator), item.creator)));
-  dl.append(row("Lifetime remaining", remaining(item.expiresAtBlock, nowBlock)));
-  if (full) dl.append(row("Expires at block", item.expiresAtBlock.toString()));
+  const lifeRow = row("Lifetime remaining", remaining(item.expiresAtBlock, nowBlock));
+  dl.append(lifeRow);
+  const expiresRow = full ? row("Expires at block", item.expiresAtBlock.toString()) : null;
+  if (expiresRow) dl.append(expiresRow);
   const tx = h("span", {}, "Loading...");
   dl.append(row("Creating transaction", tx));
   let loaded = false;
@@ -119,6 +122,15 @@ export function renderEntry(item: JournalItem, contentKey: CryptoKey | null, now
   details.addEventListener("toggle", () => details.open && loadTx());
   if (full) loadTx();
   details.append(dl);
+  if (full) {
+    // Lawyer view only: keep the entry longer when its writer allowed it.
+    details.append(
+      keepControl(item, (expiresAt, now) => {
+        lifeRow.querySelector("dd")!.textContent = remaining(expiresAt, now);
+        if (expiresRow) expiresRow.querySelector("dd")!.textContent = expiresAt.toString();
+      }),
+    );
+  }
   art.append(details);
   return art;
 }

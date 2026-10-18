@@ -374,6 +374,28 @@ details > summary { cursor: pointer; color: var(--fg); font-size: 0.95rem; paddi
 .proof dt { font-weight: 500; flex: 0 0 9.5rem; color: var(--fg); }
 .proof dd { margin: 0; flex: 1 1 10rem; min-width: 0; overflow-wrap: anywhere; }
 
+/* lawyer view: live status, keep control, rejected entries */
+.journal-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+.live { display: inline-flex; align-items: center; gap: 7px; font: 500 12px var(--mono); color: var(--muted); white-space: nowrap; }
+.live i { display: inline-block; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: beat 2.2s infinite; }
+.live.off i { background: var(--muted); animation: none; }
+.keep { margin-top: 14px; font-family: var(--sans); }
+.keep button { min-height: 40px; padding: 0 18px; font-size: 0.9rem; background: transparent; color: var(--fg); box-shadow: 0 0 0 1px var(--pill-line) inset; }
+.keep-status { margin: 10px 0 0; font-family: var(--sans); font-size: 0.9rem; }
+.keep-status:empty { display: none; }
+.keep-note { margin: 12px 0 0; font-family: var(--sans); font-size: 0.85rem; }
+#claims:empty { display: none; }
+.claim { border-top: 1px solid var(--rule); padding: 16px 0; }
+.claim p { margin: 0; }
+.claim-by { font-size: 0.92rem; overflow-wrap: anywhere; }
+.claim .claim-text { margin-top: 8px; color: var(--muted); text-decoration: line-through; font-size: 0.95rem; overflow-wrap: anywhere; }
+.status-pill.rejected { color: var(--muted); margin-left: 4px; }
+
+/* write: paying for the journal by hand */
+#self-fund { overflow-wrap: anywhere; }
+.addr { font-family: var(--mono); font-size: 0.85rem; color: var(--fg); overflow-wrap: anywhere; }
+.addr-copy { min-height: 32px; padding: 0 14px; font-size: 0.85rem; background: transparent; color: var(--fg); box-shadow: 0 0 0 1px var(--pill-line) inset; vertical-align: middle; }
+
 /* proof page: a clean list */
 ol.proof { list-style: none; padding: 0; margin: 1.5rem 0; font-family: var(--sans); font-size: 1rem; color: var(--fg); }
 ol.proof > li { border-top: 1px solid var(--rule); padding: 20px 0 20px 30px; position: relative; }
@@ -505,6 +527,8 @@ main > .reveal { animation: none; }
   .status-pill { box-shadow: 0 0 0 1px #000; color: #000; background: #fff; }
   .status-pill i { background: #000; animation: none; }
   p { color: #000; }
+  /* Scroll reveal must never hide anything on paper. */
+  .reveal, .js-reveal .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
 }
 
 /* loose children of main */

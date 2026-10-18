@@ -11,9 +11,9 @@ A journal is an address derived in the browser from the person's passphrase (sec
 | Role | Address |
 |---|---|
 | Project funder: tops up new journal addresses with test GLM | `0x659C352eBC66BB7EEb582b3BB1Fe7d8b37f3aBc8` |
-| Demo journal: creator of every demo entry (synthetic) | `0xe1b242C46A4AfaC5ddf90F2575D4e4fB0D7c365c` |
-| Forger: writes an entry with identical attributes, ignored by the app | `0x392ECFA260e1307149F406b61C8FCBD4F6c5f2b2` |
-| Supporter: extends a demo entry's lifetime | `0x92Ab6cFAFe7776a140D558aFf59E0ccfB8F80Ece` |
+| Demo journal: creator of every demo entry (synthetic) | `0x45259EADD9aBa97e0BC51f74ca2B7D2b90d91Fa7` |
+| Forger: plants a fake entry labelled as the demo journal's, rejected by the app | `0x32Dc3B17944F8996618dc8d43b2E0dC19339807a` |
+| Supporter: keeps a demo entry one more year, as a lawyer would | `0x2d43Fd40b0F1Fd4f2dE7217A3492f3955C49695b` |
 
 Real journals are created by each person's own derived address; we do not know or list them.
 
@@ -25,10 +25,10 @@ One journal entry.
 
 | Part | Content |
 |---|---|
-| Attributes (public, queryable) | `app` (str) = `safejournal`, `kind` (str) = `entry`, `v` (i32) = `1` |
+| Attributes (public, queryable) | `app` (str) = `safejournal`, `kind` (str) = `entry`, `v` (i32) = `1`, `journal` (str) = the journal address in lower case. `journal` repeats the creator on purpose: it is a label anyone can write, so the lawyer view can show entries that claim a journal but were written by another wallet as rejected |
 | Payload (`application/octet-stream`) | Format 2: `0x02`, 12 byte IV, the entry's own 32 byte key wrapped (AES-256-GCM) by the journal's content key, then a sealed body: `0x01`, 12 byte IV, AES-256-GCM ciphertext of the padded JSON entry under the entry key |
 | Entity Expiration | 1, 2, 5 or 10 years, **chosen by the person** when writing (`ExpirationTime.fromYears`) |
-| Creation flags | `permissionlessExtension` **off by default**; on only if the person ticks "Let my lawyer keep this entry longer". With the owner set to the burn address, an entry without the flag lives exactly as long as the person chose |
+| Creation flags | `readonly` always (no patches). `permissionlessExtension` **off by default**; on only if the person ticks "Let my lawyer keep this entry longer". With the owner set to the burn address, an entry without the flag lives exactly as long as the person chose |
 | Owner after the creating transaction | `0x000000000000000000000000000000000000dEaD` (burn address) |
 
 Plaintext JSON inside the payload:
@@ -46,7 +46,7 @@ The photo attached to an entry, if any. Redrawn on a canvas in the browser (whic
 
 | Part | Content |
 |---|---|
-| Attributes | `app` = `safejournal`, `kind` = `photo`, `v` = `1`, `part` (i32) = `0`, `of` (i32) = `1` |
+| Attributes | `app` = `safejournal`, `kind` = `photo`, `v` = `1`, `part` (i32) = `0`, `of` (i32) = `1`, `journal` |
 | Payload | `0x01`, IV, AES-256-GCM ciphertext of the image bytes under its entry's key (not padded) |
 | Entity Expiration, flags, owner | Same as its entry, set in the same batch |
 
@@ -70,7 +70,8 @@ Proven on Tiramisu: tx `0x1d1709cc45869eb366ed01719a095dd9f308daa2a39a25f147339e
 | Purpose | Query |
 |---|---|
 | The journal, and the lawyer view | `select({ key, creator, owner, createdAt, expiresAt, creationFlags, payload }).where([eq("app","safejournal"), eq("kind","entry")]).createdBy(journal).limit(100)`, with cursor pagination (`hasNextPage()` / `next()`) |
-| Look-alike entries from other wallets (shown as "not part of this journal") | `select({ creator }).where([eq("app","safejournal"), eq("kind","entry")]).limit(200)`, then count creators that are not the journal |
+| Planted entries (shown under "Not from this journal" as rejected) | `select({ key, creator, createdAt, contentType, payload }).where([eq("app","safejournal"), eq("kind","entry"), eq("journal", journal)]).limit(50)`, then keep those whose creator is not the journal |
+| Keep an entry longer (lawyer view) | `extendEntity({ entityKey, expires: ExpirationTime.atBlock(expiresAt + one year of blocks) })` from a throwaway key funded for gas; refused by the chain unless the entry was created with `permissionlessExtension` |
 | One entry or photo | `getEntity(key)` |
 | Proven write time | `getBlock({ blockNumber: entity.createdAt }).timestamp` |
 | Creating transaction (entities do not carry it) | `getLogs({ event: EntityCreated, args: { entityKey }, fromBlock: createdAt, toBlock: createdAt })` |
@@ -85,11 +86,12 @@ git clone https://github.com/jenzylove/safe-journal && cd safe-journal && npm in
 node scripts/verify.mjs
 ```
 
-Expected output (abridged): four entries for `0xe1b242C46A4AfaC5ddf90F2575D4e4fB0D7c365c`, each "owner burn address (cannot be deleted), permissionless extension true", the first with a 3.0 year lifetime (extended by the supporter wallet), and "Same labels, other creators: N (the forged demo entry 0xafe00c46… is among them: true)".
+Expected output (abridged): four entries for `0x45259EADD9aBa97e0BC51f74ca2B7D2b90d91Fa7`, written about two minutes apart, each "owner burn address, readonly true"; one with "extendable false"; the first with a 3.0 year lifetime after another wallet kept it a year longer; "Carry the journal's label: 5. Of those, written by another wallet (planted, rejected by the app): 1"; and "Extension … was sent by 0x2d43… (not the journal: true)".
 
 ## Keys (how to build your own reader)
 
-- Seed: `Argon2id(password = NFKC(trim(passphrase)), salt = "safejournal/argon2id/v1", memory = 64 MiB, iterations = 3, parallelism = 1, length = 32)`.
+- Normalisation: `NFKC`, trim; if every word is on the BIP39 English word list, lower case and single spaces (so capitals and extra spaces do not change the journal).
+- Seed: `Argon2id(password = normalised passphrase, salt = "safejournal/argon2id/v1", memory = 64 MiB, iterations = 3, parallelism = 1, length = 32)`. The salt is shared by every journal because there is no account to hold a per person salt; new journals therefore start only from six different generated words (about 66 bits).
 - Signing key: `HKDF-SHA256(seed, info = "safejournal/sign/v1/<i>", 32)` for the first `i` that is a valid secp256k1 scalar (in practice `i = 0`). Its address is the journal.
 - Content key: `HKDF-SHA256(seed, info = "safejournal/content/v1", 32)`, used as an AES-256-GCM key.
 - Entry plaintext padding: 4 byte big-endian length, then the JSON bytes, zero padded to the next of 1, 2, 4, 8, 16, 32 or 64 KB.

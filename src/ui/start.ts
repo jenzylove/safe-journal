@@ -85,7 +85,7 @@ export function renderStart(app: HTMLElement): () => void {
     skyBand(h("h1", {}, "Start your journal"), h("p", {}, "Your journal opens with six words. There is no account and no reset, so these words are the only way in.")),
     h("div", { class: "actions" }, show),
     area,
-    h("p", { class: "quiet-link" }, "Prefer your own passphrase? ", h("a", { href: "#/open" }, "Open with it here.")),
+    h("p", { class: "quiet-link" }, "Already have a journal? ", h("a", { href: "#/open" }, "Open it here.")),
   );
   return () => {
     words = "";
