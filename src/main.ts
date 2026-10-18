@@ -13,9 +13,16 @@ import { renderShare } from "./ui/share";
 import { renderLawyer } from "./ui/lawyer";
 import { renderDemo } from "./ui/demo";
 import { renderProof } from "./ui/proof";
+import { renderLanding } from "./ui/landing";
+import { renderStart } from "./ui/start";
+import { renderDecoy } from "./ui/decoy";
+import { mountFooter } from "./ui/footer";
 
 const screens: Record<string, (app: HTMLElement) => () => void> = {
-  "#/": renderOpen,
+  "#/": renderLanding,
+  "#/open": renderOpen,
+  "#/start": renderStart,
+  "#/decoy": renderDecoy,
   "#/journal": renderJournal,
   "#/write": renderWrite,
   "#/share": renderShare,
@@ -26,7 +33,10 @@ const screens: Record<string, (app: HTMLElement) => () => void> = {
 let cleanup: () => void = () => {};
 
 const routes: Record<string, { title: string; text: string }> = {
-  "#/": { title: "Open journal", text: "Enter your passphrase to open your journal. Use a private tab." },
+  "#/": { title: "Write it down. Keep it safe. Make it count.", text: "A private journal for documenting abuse." },
+  "#/open": { title: "Open journal", text: "Enter your passphrase to open your journal. Use a private tab." },
+  "#/start": { title: "Start your journal", text: "Choose six words to open your journal." },
+  "#/decoy": { title: "An everyday journal", text: "A second passphrase that opens ordinary notes." },
   "#/journal": {
     title: "Journal",
     text: "Your entries in time order, each showing when you said it happened and when it was written.",
@@ -82,5 +92,6 @@ document.addEventListener("click", (e) => {
   go(a.getAttribute("href")!);
 });
 mountLeaveNow();
+mountFooter();
 if (!location.hash) go("#/");
 render();

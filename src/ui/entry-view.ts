@@ -34,7 +34,7 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 let sealId = 0;
 
 /** The notary's seal: a small ink stamp with the block number in the centre. */
-function seal(block: bigint): SVGSVGElement {
+export function seal(block: bigint): SVGSVGElement {
   const id = `seal-ring-${sealId++}`;
   const svg = document.createElementNS(SVG_NS, "svg");
   svg.setAttribute("class", "seal");

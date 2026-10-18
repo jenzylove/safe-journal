@@ -258,3 +258,47 @@ section { margin: 2rem 0; }
   .seal text { fill: #000; }
   p { color: #000; }
 }
+
+/* landing, start, decoy, footer */
+.hero { margin: 0 0 1rem; }
+.hero h1 { font-size: 2.6rem; line-height: 1.1; }
+.hero .lede { font-size: 1.2rem; }
+.actions a.text-link { padding: 0.5rem 0.75rem; min-height: 44px; display: inline-flex; align-items: center; color: var(--accent); text-underline-offset: 0.25em; }
+.quiet-link { font-size: 0.95rem; margin: 0 0 1rem; }
+.hero-seal { margin: 2.5rem 0 0; text-align: center; }
+.hero-seal .seal {
+  position: static;
+  display: block;
+  margin: 0 auto 1.25rem;
+  width: 190px;
+  height: 190px;
+  animation-duration: 600ms;
+  animation-delay: 250ms;
+}
+.hero-seal p { font-family: var(--serif); font-style: italic; font-size: 1.1rem; max-width: 24rem; margin: 0 auto; }
+.safety-note { font-size: 0.9rem; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 0.75rem 0; margin: 2.5rem 0; }
+.band { margin: 3.5rem 0; }
+.band h2 { margin-top: 0; font-size: 1.7rem; }
+.band h3 { font-size: 1.2rem; margin: 0 0 0.25rem; }
+.steps { list-style: none; padding: 0; margin: 1.5rem 0 0; }
+.steps li { position: relative; padding: 0 0 1.75rem 3.25rem; }
+.steps .step-n { position: absolute; left: 0; top: -0.2rem; font-family: var(--serif); font-size: 2.4rem; line-height: 1; color: var(--seal); }
+.steps p, .point p { margin: 0; }
+.point { margin: 0 0 1.5rem; }
+.link-row { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+.final { text-align: center; margin: 4rem 0 1rem; }
+.big-words { font-size: 1.4rem; line-height: 1.7; }
+#words-area, #decoy-area { margin-top: 1rem; }
+#start-status:empty, #decoy-status:empty { display: none; }
+#regen { background: transparent; color: var(--accent); text-decoration: underline; text-underline-offset: 0.25em; text-decoration-thickness: 1px; padding-left: 0.75rem; padding-right: 0.75rem; }
+#decoy-area input { margin-bottom: 0.75rem; }
+.site-footer { max-width: 38rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; border-top: 1px solid var(--rule); font-size: 0.9rem; }
+.site-footer nav { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; margin-bottom: 0.5rem; }
+.site-footer nav a { display: inline-flex; align-items: center; min-height: 36px; }
+.site-footer p { margin: 0; font-size: 0.9rem; }
+@media (min-width: 720px) {
+  main, .site-footer { max-width: 44rem; }
+}
+@media print { .site-footer { display: none !important; } }
+#regen { margin-left: -0.75rem; }
+.quiet-link a { text-underline-offset: 0.2em; }

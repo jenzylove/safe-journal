@@ -11,9 +11,9 @@ A journal is an address derived in the browser from the person's passphrase (sec
 | Role | Address |
 |---|---|
 | Project funder: tops up new journal addresses with test GLM | `0x659C352eBC66BB7EEb582b3BB1Fe7d8b37f3aBc8` |
-| Demo journal: creator of every demo entry (synthetic) | `0x10cf3519F2A71243B3C3091FF97c18a1e32bc8b2` |
-| Forger: writes an entry with identical attributes, ignored by the app | `0xFa21E9e5255538f6C4B1828b4125515052d0994b` |
-| Supporter: extends a demo entry's lifetime | `0x5f82847C4ae11CAd62939Cd67A2236B0300DB4C9` |
+| Demo journal: creator of every demo entry (synthetic) | `0xe1b242C46A4AfaC5ddf90F2575D4e4fB0D7c365c` |
+| Forger: writes an entry with identical attributes, ignored by the app | `0x392ECFA260e1307149F406b61C8FCBD4F6c5f2b2` |
+| Supporter: extends a demo entry's lifetime | `0x92Ab6cFAFe7776a140D558aFf59E0ccfB8F80Ece` |
 
 Real journals are created by each person's own derived address; we do not know or list them.
 
@@ -26,7 +26,7 @@ One journal entry.
 | Part | Content |
 |---|---|
 | Attributes (public, queryable) | `app` (str) = `safejournal`, `kind` (str) = `entry`, `v` (i32) = `1` |
-| Payload (`application/octet-stream`) | `0x01` format byte, 12 byte IV, AES-256-GCM ciphertext of the padded JSON entry |
+| Payload (`application/octet-stream`) | Format 2: `0x02`, 12 byte IV, the entry's own 32 byte key wrapped (AES-256-GCM) by the journal's content key, then a sealed body: `0x01`, 12 byte IV, AES-256-GCM ciphertext of the padded JSON entry under the entry key |
 | Entity Expiration | 1, 2 or 5 years, **chosen by the person** when writing (`ExpirationTime.fromYears`) |
 | Creation flags | `permissionlessExtension: true`, so the person, their lawyer or anyone they trust can extend it |
 | Owner after the creating transaction | `0x000000000000000000000000000000000000dEaD` (burn address) |
@@ -47,7 +47,7 @@ The photo attached to an entry, if any. Redrawn on a canvas in the browser (whic
 | Part | Content |
 |---|---|
 | Attributes | `app` = `safejournal`, `kind` = `photo`, `v` = `1`, `part` (i32) = `0`, `of` (i32) = `1` |
-| Payload | `0x01`, IV, AES-256-GCM ciphertext of the image bytes (not padded) |
+| Payload | `0x01`, IV, AES-256-GCM ciphertext of the image bytes under its entry's key (not padded) |
 | Entity Expiration, flags, owner | Same as its entry, set in the same batch |
 
 ## Why so few attributes
@@ -85,7 +85,7 @@ git clone https://github.com/jenzylove/safe-journal && cd safe-journal && npm in
 node scripts/verify.mjs
 ```
 
-Expected output (abridged): four entries for `0x10cf3519F2A71243B3C3091FF97c18a1e32bc8b2`, each "owner burn address (cannot be deleted), permissionless extension true", the first with a 3.0 year lifetime (extended by the supporter wallet), and "Same labels, other creators: N (the forged demo entry 0x85a5ac96… is among them: true)".
+Expected output (abridged): four entries for `0xe1b242C46A4AfaC5ddf90F2575D4e4fB0D7c365c`, each "owner burn address (cannot be deleted), permissionless extension true", the first with a 3.0 year lifetime (extended by the supporter wallet), and "Same labels, other creators: N (the forged demo entry 0xafe00c46… is among them: true)".
 
 ## Keys (how to build your own reader)
 
@@ -93,7 +93,11 @@ Expected output (abridged): four entries for `0x10cf3519F2A71243B3C3091FF97c18a1
 - Signing key: `HKDF-SHA256(seed, info = "safejournal/sign/v1/<i>", 32)` for the first `i` that is a valid secp256k1 scalar (in practice `i = 0`). Its address is the journal.
 - Content key: `HKDF-SHA256(seed, info = "safejournal/content/v1", 32)`, used as an AES-256-GCM key.
 - Entry plaintext padding: 4 byte big-endian length, then the JSON bytes, zero padded to the next of 1, 2, 4, 8, 16, 32 or 64 KB.
-- Lawyer link: `#/lawyer?a=<journal address>&k=<base64url content key>`. The fragment is never sent to any server.
+- Per-entry keys: each entry has a random 32 byte AES-256-GCM key, wrapped by the content key with additional data `safejournal/v2/wrap/<entity key>`. The owner unwraps every entry; a share link carries only the keys of the entries the person chose. Format 1 entries (an early test format, encrypted directly with the content key) still open with the content key.
+- Share links (all in the URL fragment, which browsers never send to a server; the lawyer view also removes the key from the address bar as soon as it loads):
+  - chosen entries: `#/lawyer?a=<journal address>&s=<base64url bundle>`, where the bundle is, per entry, the 32 byte entity key followed by its 32 byte entry key
+  - whole journal: `#/lawyer?a=<journal address>&k=<base64url content key>`
+  - proof only: `#/lawyer?a=<journal address>`
 
 ## Lifetimes
 
@@ -105,4 +109,4 @@ Expected output (abridged): four entries for `0x10cf3519F2A71243B3C3091FF97c18a1
 
 ## Kept off Arkiv on purpose
 
-The passphrase, every key, every plaintext, the original photo file and its metadata, and anything that identifies the person. The funding endpoint receives only an address and keeps no log of its own. Expired entities leave Arkiv's state, but their ciphertext stays in the chain's transaction history; privacy rests on the key, not on expiry.
+The passphrase, every key, every plaintext, the original photo file and its metadata, and anything that identifies the person. The funding endpoint receives only an address and a proof of work (`sha256("safejournal-fund|<address>|<hour>|<nonce>")` with 19 leading zero bits, checked statelessly), sends 0.005 test GLM when the address is below 0.001, and keeps no log of its own. Expired entities leave Arkiv's state, but their ciphertext stays in the chain's transaction history; privacy rests on the key, not on expiry.

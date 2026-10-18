@@ -11,11 +11,11 @@ export function renderDemo(app: HTMLElement): () => void {
   app.replaceChildren(
     h("h1", {}, "Demo journal"),
     h("p", {}, "This journal belongs to nobody. Every entry in it is synthetic, written to the Arkiv testnet so you can inspect how Safe Journal works."),
-    h("p", {}, "You get the same read-only link a lawyer would receive: every entry, its proven write time, and the proof behind it. Nobody holds the passphrase to write as this journal, so it cannot be changed."),
+    h("p", {}, "You get the same read only link a lawyer would receive: every entry, its proven write time, and the proof behind it. Nobody holds the passphrase to write as this journal, so it cannot be changed."),
     h("div", { class: "actions" }, lawyer, h("a", { href: "#/proof", class: "button" }, "See the proof")),
     h("h2", {}, "Try it yourself"),
-    h("p", {}, "Start your own journal: open Safe Journal, tap Generate, and write an entry. Please keep it synthetic. It is funded, written and proven in about ten seconds."),
-    h("div", { class: "actions" }, h("a", { href: "#/", class: "button" }, "Start a journal")),
+    h("p", {}, "Start your own journal in a private tab and write an entry. Please keep it synthetic. It is funded, written and proven in about ten seconds."),
+    h("div", { class: "actions" }, h("a", { href: "#/start", class: "button" }, "Start a journal")),
   );
   return () => {};
 }

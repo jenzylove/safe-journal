@@ -7,7 +7,7 @@ import { releasePhotos, renderEntry } from "./entry-view";
 export function renderJournal(app: HTMLElement): () => void {
   const s = getSession();
   if (!s) {
-    go("#/");
+    go("#/open");
     return () => {};
   }
   let stopped = false;
@@ -34,6 +34,7 @@ export function renderJournal(app: HTMLElement): () => void {
       h("a", { href: "#/share", class: "button" }, "Share with a lawyer"),
       close,
     ),
+    h("p", { class: "quiet-link no-print" }, h("a", { href: "#/decoy" }, "Set up an everyday journal")),
     status,
     empty,
     list,

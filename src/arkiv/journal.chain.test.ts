@@ -33,9 +33,17 @@ run("journal on Tiramisu", () => {
     expect(await creationTx(it0.key, it0.createdAtBlock)).toBe(w.txHash);
     const t = await blockTime(it0.createdAtBlock);
     expect(Math.abs(t.getTime() - Date.now())).toBeLessThan(5 * 60_000);
-    const blob = await loadPhoto(keys.contentKey, it0.entry!.photo!.parts[0] as `0x${string}`, "image/jpeg");
+    const blob = await loadPhoto(it0.entryKey!, it0.entry!.photo!.parts[0] as `0x${string}`, "image/jpeg");
     expect(new Uint8Array(await blob.arrayBuffer())).toEqual(photo);
     expect(await countForeignEntries(keys.address)).toBeGreaterThanOrEqual(0);
+
+    // selective share: a bundle for this entry opens it without the content key
+    const { encodeShare, decodeShare } = await import("../lib");
+    const shared = decodeShare(encodeShare([{ entityKey: it0.key, entryKeyRaw: it0.entryKeyRaw! }]));
+    const viaShare = await listEntries(keys.address, { shared });
+    expect(viaShare[0]?.entry?.text).toBe("Synthetic integration test entry.");
+    const sharedPhoto = await loadPhoto(viaShare[0]!.entryKey!, it0.entry!.photo!.parts[0] as `0x${string}`, "image/jpeg");
+    expect(new Uint8Array(await sharedPhoto.arrayBuffer())).toEqual(photo);
 
     const wrong = await deriveKeys(generatePassphrase());
     const asStranger = await listEntries(keys.address, wrong.contentKey);

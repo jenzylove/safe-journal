@@ -3,7 +3,9 @@
 import type { Hex } from "viem";
 import evidence from "../../arkiv/evidence.json";
 import { BURN, balanceOf, blockTime, countForeignEntries, explorerAddress, explorerEntity, explorerTx, listEntries, publicClient } from "../arkiv/journal";
-import { errText, fmtTime, h, link, short } from "./dom";
+import { errText, fmtTime, fromB64Url, h, link, short } from "./dom";
+import { DEMO_CONTENT_KEY } from "../demo";
+import { decodeShare, encodeShare, importContentKey } from "../lib";
 
 type Row = { claim: string; check: () => Promise<{ ok: boolean; detail: string; links?: [string, string][] }> };
 
@@ -47,6 +49,19 @@ export function renderProof(app: HTMLElement): () => void {
         const n = await countForeignEntries(journal);
         const f = await publicClient.getEntity(evidence.forged.entityKey as Hex);
         return { ok: f.creator.toLowerCase() === forger.toLowerCase() && n >= 1, detail: `Forged entry created by ${short(f.creator)}; ${n} look-alike entries from other wallets, none shown in the journal`, links: [["forged entry", explorerEntity(evidence.forged.entityKey as Hex)], ["forger wallet", explorerAddress(forger)]] };
+      },
+    },
+    {
+      claim: "A share link opens only the entries chosen for it",
+      check: async () => {
+        const contentKey = await importContentKey(fromB64Url(DEMO_CONTENT_KEY));
+        const owned = (await listEntries(journal, { contentKey })).filter((i) => i.entryKeyRaw);
+        const chosen = owned[0];
+        if (!chosen) return { ok: false, detail: "No per-entry keys found" };
+        const shared = decodeShare(encodeShare([{ entityKey: chosen.key, entryKeyRaw: chosen.entryKeyRaw! }]));
+        const asLawyer = await listEntries(journal, { shared });
+        const opened = asLawyer.filter((i) => i.entry).length;
+        return { ok: opened === 1 && asLawyer.length === owned.length, detail: `A link made for 1 entry opens ${opened} of ${asLawyer.length}; the other ${asLawyer.length - opened} stay locked` };
       },
     },
     {

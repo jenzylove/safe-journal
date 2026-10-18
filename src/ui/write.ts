@@ -17,7 +17,7 @@ function localNow(): string {
 export function renderWrite(app: HTMLElement): () => void {
   const s = getSession();
   if (!s) {
-    go("#/");
+    go("#/open");
     return () => {};
   }
 

@@ -27,4 +27,4 @@ for (const e of mine.entities.sort((a, b) => Number(a.createdAt - b.createdAt)))
 const foreign = any.entities.filter((e) => e.creator.toLowerCase() !== JOURNAL.toLowerCase());
 console.log(`\nSame labels, other creators: ${foreign.length} (the forged demo entry ${evidence.forged.entityKey} is among them: ${foreign.some((e) => e.key === evidence.forged.entityKey)})`);
 console.log(`createdBy(journal) returned ${mine.entities.length}; label-only query returned ${any.entities.length}.`);
-console.log("\nPayloads are AES-256-GCM ciphertext; open the demo journal at https://safe-journal-seven.vercel.app/#/demo to read them with the published demo passphrase.");
+console.log("\nPayloads are AES-256-GCM ciphertext; read the demo journal through its published read link at https://safe-journal-seven.vercel.app/#/demo");

@@ -22,7 +22,7 @@ function linkBox(title: string, url: string, note: string): HTMLElement {
 export function renderShare(app: HTMLElement): () => void {
   const s = getSession();
   if (!s) {
-    go("#/");
+    go("#/open");
     return () => {};
   }
   const base = `${location.origin}${location.pathname}#/lawyer?a=${s.address}`;
