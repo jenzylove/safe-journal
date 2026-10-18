@@ -61,8 +61,8 @@ On a normal server, the write time is our word and the evidence dies when we do.
 | Atomic `executeBatch` with `ownershipChanges` | "Owner: burn address, cannot be deleted" on every entry, from the first second |
 | `$createdAt` block | The seal, and "Written at" next to "You said it happened" |
 | `createdBy(journal)` | A forged entry with identical labels is shown as not part of the journal |
-| Entity Expiration, chosen per entry | "How long to keep it": 1, 2 or 5 years |
-| `permissionlessExtension` | A lawyer can keep a case's entries alive without the journal's key |
+| Entity Expiration, chosen per entry | "How long to keep it": 1, 2, 5 or 10 years, and nobody can shorten it |
+| `permissionlessExtension`, opt in | "Let my lawyer keep this entry longer": off unless the person ticks it |
 | Attributes vs payload | The explorer shows three labels and ciphertext, nothing about the person |
 | `watchEntityEvents` over WebSocket | New entries appear in an open journal without a refresh |
 

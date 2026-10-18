@@ -58,7 +58,7 @@ async function main() {
   const written: { key: Hex; tx: Hex; photo?: Hex }[] = [];
   for (const e of ENTRIES) {
     const photo = "photo" in e ? { bytes: syntheticPng(), mime: "image/png" } : undefined;
-    const w = await writeEntry(keys.signingKey, keys.contentKey, { v: 1, happenedAt: e.happenedAt, category: e.category, text: e.text }, 2, photo);
+    const w = await writeEntry(keys.signingKey, keys.contentKey, { v: 1, happenedAt: e.happenedAt, category: e.category, text: e.text }, 2, photo, true);
     written.push({ key: w.entityKey, tx: w.txHash, photo: w.photoKey });
     log("entry", w.entityKey, w.txHash);
   }

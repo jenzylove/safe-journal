@@ -55,7 +55,11 @@ export function renderJournal(app: HTMLElement): () => void {
       if (stopped) return;
       status.textContent = "";
       items.forEach(add);
-      if (!items.length) empty.hidden = false;
+      if (!items.length) {
+        empty.hidden = false;
+        // Every passphrase opens its own journal, so a small typo opens a new, empty one.
+        if (!s.fresh) empty.querySelector("p")!.textContent = "No entries found for these words. If you expected entries, close the journal and check each word: one changed word opens a different, empty journal.";
+      }
       stopWatch = watchJournal(
         s.address,
         async (key: Hex) => {

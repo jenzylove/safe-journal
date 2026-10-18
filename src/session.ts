@@ -1,7 +1,7 @@
 // The only place keys live: a module-level variable. Never written to any browser storage.
 import type { Hex } from "viem";
 
-export type Session = { address: Hex; signingKey: Hex; contentKey: CryptoKey; contentKeyRaw: Uint8Array };
+export type Session = { address: Hex; signingKey: Hex; contentKey: CryptoKey; contentKeyRaw: Uint8Array; /** Set when the journal was created in this tab. */ fresh?: boolean };
 
 let current: Session | null = null;
 

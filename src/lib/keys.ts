@@ -7,7 +7,7 @@ import { argon2id } from "hash-wasm";
 import { hkdf } from "@noble/hashes/hkdf.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
-import { privateKeyToAccount } from "viem/accounts";
+import { privateKeyToAccount, english } from "viem/accounts";
 import { bytesToHex, type Hex } from "viem";
 
 // One app-wide salt: there is no account to hang a per-user salt on, so the passphrase alone must
@@ -25,8 +25,29 @@ export type JournalKeys = {
   contentKeyRaw: Uint8Array;
 };
 
+const WORDS = new Set(english);
+/**
+ * Word-list passphrases (the six words the app generates) ignore capitals and extra spaces, so
+ * "Term  Canoe raw" opens the same journal as "term canoe raw". Anything else is used as typed
+ * (after Unicode normalisation and trimming the ends).
+ */
+export function normalizePassphrase(passphrase: string): string {
+  const base = passphrase.normalize("NFKC").trim();
+  const words = base.toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length >= 2 && words.every((w) => WORDS.has(w))) return words.join(" ");
+  return base;
+}
+
+/** Positions (1 based) of words that are not on the word list, when the passphrase looks like one. */
+export function unknownWords(passphrase: string): number[] {
+  const words = passphrase.normalize("NFKC").trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length !== 6) return [];
+  const bad = words.map((w, i) => (WORDS.has(w) ? 0 : i + 1)).filter(Boolean);
+  return bad.length <= 2 ? bad : [];
+}
+
 export async function deriveSeed(passphrase: string, params = ARGON_PARAMS): Promise<Uint8Array> {
-  const normalized = passphrase.normalize("NFKC").trim();
+  const normalized = normalizePassphrase(passphrase);
   return argon2id({ password: normalized, salt: ARGON_SALT, ...params, hashLength: 32, outputType: "binary" });
 }
 

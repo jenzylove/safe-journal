@@ -1,4 +1,4 @@
-import { checkPassphrase, deriveKeys, generatePassphrase } from "../lib";
+import { checkPassphrase, deriveKeys, generatePassphrase, unknownWords } from "../lib";
 import { listEntries } from "../arkiv/journal";
 import { setSession } from "../session";
 import { errText, h, go } from "./dom";
@@ -25,6 +25,12 @@ export function renderOpen(app: HTMLElement): () => void {
     if (!v) {
       verdict.textContent = "";
       verdict.className = "";
+      return;
+    }
+    const bad = unknownWords(v);
+    if (bad.length) {
+      verdict.textContent = `Check word ${bad.join(" and ")}: it is not one of the words Safe Journal uses. Capitals and extra spaces do not matter.`;
+      verdict.className = "warn";
       return;
     }
     const r = checkPassphrase(v);

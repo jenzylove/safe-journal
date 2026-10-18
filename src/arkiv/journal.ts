@@ -16,7 +16,7 @@ export const RPC_WS = "wss://rpc.tiramisu.db-chain.testnet.arkiv.network";
 export const EXPLORER = "https://tiramisu.explorer.arkiv.network";
 export const BURN: Hex = "0x000000000000000000000000000000000000dEaD";
 export const APP = "safejournal";
-export const LIFETIMES = [1, 2, 5] as const;
+export const LIFETIMES = [1, 2, 5, 10] as const;
 export type LifetimeYears = (typeof LIFETIMES)[number];
 /** Largest encrypted photo we put in one batch. 60 KB batches were proven on Tiramisu. */
 export const MAX_PHOTO_BYTES = 50_000;
@@ -47,13 +47,13 @@ export type WriteResult = { entityKey: Hex; photoKey?: Hex; txHash: Hex };
 /** Serialises writes from this tab: predicted keys depend on the account nonce. */
 let writing: Promise<unknown> = Promise.resolve();
 
-export function writeEntry(signingKey: Hex, contentKey: CryptoKey, entry: Omit<EntryV1, "photo">, lifetime: LifetimeYears, photo?: { bytes: Uint8Array; mime: string }): Promise<WriteResult> {
-  const run = writing.then(() => doWrite(signingKey, contentKey, entry, lifetime, photo));
+export function writeEntry(signingKey: Hex, contentKey: CryptoKey, entry: Omit<EntryV1, "photo">, lifetime: LifetimeYears, photo?: { bytes: Uint8Array; mime: string }, extendable = false): Promise<WriteResult> {
+  const run = writing.then(() => doWrite(signingKey, contentKey, entry, lifetime, photo, extendable));
   writing = run.catch(() => undefined);
   return run;
 }
 
-async function doWrite(signingKey: Hex, contentKey: CryptoKey, entry: Omit<EntryV1, "photo">, lifetime: LifetimeYears, photo?: { bytes: Uint8Array; mime: string }): Promise<WriteResult> {
+async function doWrite(signingKey: Hex, contentKey: CryptoKey, entry: Omit<EntryV1, "photo">, lifetime: LifetimeYears, photo?: { bytes: Uint8Array; mime: string }, extendable = false): Promise<WriteResult> {
   if (!LIFETIMES.includes(lifetime)) throw new Error("lifetime must be 1, 2 or 5 years");
   const wallet = walletFor(signingKey);
   const owner = wallet.account.address;
@@ -62,7 +62,8 @@ async function doWrite(signingKey: Hex, contentKey: CryptoKey, entry: Omit<Entry
   const entryKey = predicted[0]!;
   const photoKey = predicted[1];
   const expires = ExpirationTime.fromYears(lifetime);
-  const flags = { permissionlessExtension: true };
+  // Only the person decides whether anyone else may extend this entry's lifetime.
+  const flags = { permissionlessExtension: extendable };
 
   const creates = [];
   let full: EntryV1 = { ...entry };

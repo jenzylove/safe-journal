@@ -27,8 +27,8 @@ One journal entry.
 |---|---|
 | Attributes (public, queryable) | `app` (str) = `safejournal`, `kind` (str) = `entry`, `v` (i32) = `1` |
 | Payload (`application/octet-stream`) | Format 2: `0x02`, 12 byte IV, the entry's own 32 byte key wrapped (AES-256-GCM) by the journal's content key, then a sealed body: `0x01`, 12 byte IV, AES-256-GCM ciphertext of the padded JSON entry under the entry key |
-| Entity Expiration | 1, 2 or 5 years, **chosen by the person** when writing (`ExpirationTime.fromYears`) |
-| Creation flags | `permissionlessExtension: true`, so the person, their lawyer or anyone they trust can extend it |
+| Entity Expiration | 1, 2, 5 or 10 years, **chosen by the person** when writing (`ExpirationTime.fromYears`) |
+| Creation flags | `permissionlessExtension` **off by default**; on only if the person ticks "Let my lawyer keep this entry longer". With the owner set to the burn address, an entry without the flag lives exactly as long as the person chose |
 | Owner after the creating transaction | `0x000000000000000000000000000000000000dEaD` (burn address) |
 
 Plaintext JSON inside the payload:
@@ -103,9 +103,9 @@ Expected output (abridged): four entries for `0xe1b242C46A4AfaC5ddf90F2575D4e4fB
 
 | Entity | Lifetime | Why |
 |---|---|---|
-| `entry` | 1, 2 or 5 years, the person's choice | Evidence has to outlast a court process; the person decides how long it should exist |
+| `entry` | 1, 2, 5 or 10 years, the person's choice | Evidence has to outlast a court process; the person decides how long it should exist, and nobody can shorten it |
 | `photo` | Same as its entry | It is part of the entry |
-| Extensions | Anyone, any time (`permissionlessExtension`) | A lawyer or advocate can keep a case's evidence alive without holding the journal's key |
+| Extensions | Only entries the person opened to it (`permissionlessExtension`, opt in) | A lawyer or advocate can keep a case's evidence alive without holding the journal's key, but only where the person allowed it |
 
 ## Kept off Arkiv on purpose
 

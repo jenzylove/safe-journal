@@ -60,7 +60,7 @@ export function renderStart(app: HTMLElement): () => void {
     status.textContent = "Opening...";
     try {
       const k = await deriveKeys(words);
-      setSession({ address: k.address, signingKey: k.signingKey, contentKey: k.contentKey, contentKeyRaw: k.contentKeyRaw });
+      setSession({ address: k.address, signingKey: k.signingKey, contentKey: k.contentKey, contentKeyRaw: k.contentKeyRaw, fresh: true });
       words = "";
       box.textContent = "";
       w2.value = "";

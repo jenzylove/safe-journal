@@ -80,7 +80,7 @@ export function renderLanding(app: HTMLElement): () => void {
       h(
         "p",
         {},
-        "Safe Journal stores each entry on Arkiv, a database that lives on a blockchain. Every entry is encrypted in your browser, written in one transaction that hands it to an address nobody controls, and kept for as long as you choose: one, two or five years. Anyone you trust can keep it alive longer.",
+        "Safe Journal stores each entry on Arkiv, a database that lives on a blockchain. Every entry is encrypted in your browser, written in one transaction that hands it to an address nobody controls, and kept for exactly as long as you choose: one, two, five or ten years. If you allow it, your lawyer can keep an entry longer.",
       ),
       h("p", { class: "link-row" }, h("a", { href: "#/proof" }, "See the live proof"), ext, h("a", { href: "#/demo" }, "Try the demo journal")),
     ),

@@ -29,6 +29,7 @@ export function renderWrite(app: HTMLElement): () => void {
   for (const y of LIFETIMES) life.append(h("option", { value: String(y) }, `${y} ${y === 1 ? "year" : "years"}`));
   life.value = "2";
   const photo = h("input", { type: "file", id: "photo", accept: "image/*" });
+  const extendable = h("input", { type: "checkbox", id: "extendable" });
   const status = h("p", { id: "write-status", role: "status" });
   const submit = h("button", { type: "submit", id: "save-btn" }, "Save entry");
 
@@ -43,7 +44,9 @@ export function renderWrite(app: HTMLElement): () => void {
     cat,
     h("label", { for: "lifetime" }, "How long to keep it"),
     life,
-    h("p", { class: "hint" }, "Anyone you share the journal with can keep an entry alive for longer."),
+    h("p", { class: "hint" }, "After this time the entry is removed from Arkiv. Nobody can shorten it."),
+    h("label", { class: "check", for: "extendable" }, extendable, " Let my lawyer keep this entry longer"),
+    h("p", { class: "hint" }, "Off unless you tick it. If you tick it, anyone holding the entry's address can add more time, which helps a court case outlast your choice. It never lets them read it."),
     h("label", { for: "photo" }, "Photo (optional)"),
     photo,
     h("p", { class: "hint" }, "The photo is made smaller on this device and its hidden details, such as location, are removed."),
@@ -83,6 +86,7 @@ export function renderWrite(app: HTMLElement): () => void {
         { v: 1, happenedAt: happened.toISOString(), category: cat.value as Category, text: body },
         Number(life.value) as LifetimeYears,
         prepared,
+        extendable.checked,
       );
       let proven = "";
       try {

@@ -21,7 +21,7 @@ run("journal on Tiramisu", () => {
     await new Promise((r) => setTimeout(r, 2000));
 
     const photo = new Uint8Array(30_000).map((_, i) => (i * 7) & 255);
-    const w = await writeEntry(keys.signingKey, keys.contentKey, { v: 1, happenedAt: "2026-10-16T22:10:00+01:00", category: "threats", text: "Synthetic integration test entry." }, 1, { bytes: photo, mime: "image/jpeg" });
+    const w = await writeEntry(keys.signingKey, keys.contentKey, { v: 1, happenedAt: "2026-10-16T22:10:00+01:00", category: "threats", text: "Synthetic integration test entry." }, 1, { bytes: photo, mime: "image/jpeg" }, true);
 
     const items = await listEntries(keys.address, keys.contentKey);
     expect(items).toHaveLength(1);

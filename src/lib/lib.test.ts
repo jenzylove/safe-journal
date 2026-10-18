@@ -98,3 +98,19 @@ describe("per-entry keys", () => {
     expect((await openEntryAny(p, k1, { contentKey })).entryKey).toBeNull();
   });
 });
+
+import { normalizePassphrase, unknownWords } from "./keys";
+describe("forgiving passphrase input", () => {
+  it("ignores capitals and extra spaces for word list passphrases only", async () => {
+    expect(normalizePassphrase("  Term  canoe RAW color letter echo ")).toBe("term canoe raw color letter echo");
+    expect(normalizePassphrase("Blue kettle on Ikeja road!")).toBe("Blue kettle on Ikeja road!");
+    const a = await deriveKeys("term canoe raw color letter echo", FAST);
+    const b = await deriveKeys("Term canoe  raw color Letter echo", FAST);
+    expect(a.address).toBe(b.address);
+  });
+  it("points at words that are not on the list", () => {
+    expect(unknownWords("term canoe rwa color letter echo")).toEqual([3]);
+    expect(unknownWords("term canoe raw color letter echo")).toEqual([]);
+    expect(unknownWords("my own long sentence here")).toEqual([]);
+  });
+});
