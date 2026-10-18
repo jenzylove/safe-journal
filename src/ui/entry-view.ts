@@ -83,7 +83,7 @@ export function renderEntry(item: JournalItem, contentKey: CryptoKey | null, now
 
   if (entry) {
     art.append(h("p", { class: "entry-text" }, entry.text));
-    if (entry.photo && contentKey) {
+    if (entry.photo && (item.entryKey ?? contentKey)) {
       const photo = entry.photo;
       const box = h("div", { class: "photo no-print" });
       const btn = h("button", { type: "button" }, "Show photo");
@@ -91,7 +91,7 @@ export function renderEntry(item: JournalItem, contentKey: CryptoKey | null, now
         btn.disabled = true;
         btn.textContent = "Loading photo...";
         try {
-          const blob = await loadPhoto(contentKey, photo.parts[0] as Hex, photo.mime);
+          const blob = await loadPhoto((item.entryKey ?? contentKey)!, photo.parts[0] as Hex, photo.mime);
           const url = URL.createObjectURL(blob);
           photoUrls.add(url);
           btn.replaceWith(h("img", { src: url, alt: "Photo attached to this entry" }));
@@ -106,7 +106,7 @@ export function renderEntry(item: JournalItem, contentKey: CryptoKey | null, now
     }
   } else {
     art.append(
-      h("p", { class: "entry-text" }, item.unreadable ? "Locked. This entry could not be opened with this key." : "Locked (no key)."),
+      h("p", { class: "entry-text" }, item.unreadable ? "Not shared with you. Only its proven time is shown." : "Locked (no key)."),
     );
   }
 

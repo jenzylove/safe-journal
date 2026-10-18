@@ -75,3 +75,26 @@ describe("entry encoding", () => {
     expect(await open(contentKey, sealed, aad("photo", key, 0), false)).toEqual(parts[0]);
   });
 });
+
+import { sealEntryV2, openEntryAny, newEntryKeyRaw, encodeShare, decodeShare } from "./access";
+describe("per-entry keys", () => {
+  const entry: EntryV1 = { v: 1, happenedAt: "2026-10-14T21:30:00Z", category: "other", text: "Synthetic." };
+  const k1 = "0x" + "11".repeat(32);
+  const k2 = "0x" + "22".repeat(32);
+  it("owner opens with the content key; a share opens only its entries", async () => {
+    const { contentKey } = await deriveKeys("alpha bravo charlie delta echo foxtrot", FAST);
+    const r1 = newEntryKeyRaw(), r2 = newEntryKeyRaw();
+    const p1 = await sealEntryV2(contentKey, r1, entry, k1);
+    const p2 = await sealEntryV2(contentKey, r2, { ...entry, text: "Second." }, k2);
+    expect((await openEntryAny(p1, k1, { contentKey })).entry.text).toBe("Synthetic.");
+    const shared = decodeShare(encodeShare([{ entityKey: k1, entryKeyRaw: r1 }]));
+    expect((await openEntryAny(p1, k1, { shared })).entry.text).toBe("Synthetic.");
+    await expect(openEntryAny(p2, k2, { shared })).rejects.toThrow("locked");
+    await expect(openEntryAny(p1, k2, { shared: new Map([[k2, r1]]) })).rejects.toThrow();
+  });
+  it("still opens format 1 entries with the content key", async () => {
+    const { contentKey } = await deriveKeys("alpha bravo charlie delta echo foxtrot", FAST);
+    const p = await sealEntry(contentKey, entry, k1);
+    expect((await openEntryAny(p, k1, { contentKey })).entryKey).toBeNull();
+  });
+});

@@ -1,6 +1,6 @@
 import type { Hex } from "viem";
 import { countForeignEntries, listEntries, publicClient } from "../arkiv/journal";
-import { importContentKey } from "../lib";
+import { importContentKey, decodeShare, type Access } from "../lib";
 import { errText, fromB64Url, h, short } from "./dom";
 import { releasePhotos, renderEntry } from "./entry-view";
 
@@ -8,6 +8,9 @@ export function renderLawyer(app: HTMLElement): () => void {
   const q = new URLSearchParams(location.hash.split("?")[1] ?? "");
   const a = q.get("a") ?? "";
   const k = q.get("k");
+  const shareParam = q.get("s");
+  // Keep the key only in memory: take it out of the address bar (and so out of browser history).
+  if (k || shareParam) history.replaceState(null, "", `${location.pathname}#/lawyer?a=${a}`);
   app.replaceChildren(h("h1", {}, "Lawyer view"));
   if (!/^0x[0-9a-fA-F]{40}$/.test(a)) {
     app.append(h("p", { class: "error" }, "This link is not complete. Ask for the link again."));
@@ -26,20 +29,24 @@ export function renderLawyer(app: HTMLElement): () => void {
   (async () => {
     try {
       let key: CryptoKey | null = null;
+      let shared: Map<string, Uint8Array> | undefined;
       let keyBad = false;
-      if (k) {
-        try {
-          key = await importContentKey(fromB64Url(k));
-        } catch {
-          keyBad = true;
-        }
+      try {
+        if (k) key = await importContentKey(fromB64Url(k));
+        if (shareParam) shared = decodeShare(fromB64Url(shareParam));
+      } catch {
+        keyBad = true;
       }
+      const access: Access = { contentKey: key, shared };
       const nowBlock = await publicClient.getBlockNumber();
-      const items = await listEntries(address, key);
+      const all = await listEntries(address, access);
+      // A selective share shows the chosen entries; the rest are counted, not shown.
+      const items = shared && !key ? all.filter((i) => shared!.has(i.key.toLowerCase())) : all;
+      const withheld = all.length - items.length;
       if (stopped) return;
       status.className = keyBad ? "error" : "";
       status.textContent = keyBad ? "The key in this link is not valid. Entries are shown locked." : "";
-      head.textContent = `Journal ${short(address)}. Entries: ${items.length}`;
+      head.textContent = `Journal ${short(address)}. Entries shared: ${items.length}${withheld ? `, plus ${withheld} not shared with you` : ""}`;
       if (!items.length) list.append(h("p", {}, "No entries found for this journal."));
       for (const it of items) list.append(renderEntry(it, key, nowBlock, true));
       try {

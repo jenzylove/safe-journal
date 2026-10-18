@@ -8,7 +8,8 @@ import { tiramisu } from "@arkiv-network/sdk/chains";
 import { eq } from "@arkiv-network/sdk/query";
 import { http, webSocket, type Hex, getAbiItem } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { sealEntry, openEntry, seal, open, aad, sha256Hex, type EntryV1 } from "../lib/entry";
+import { seal, open, aad, sha256Hex, type EntryV1 } from "../lib/entry";
+import { sealEntryV2, openEntryAny, newEntryKeyRaw, importEntryKey, type Access } from "../lib/access";
 
 export const RPC_HTTP = "https://rpc.tiramisu.db-chain.testnet.arkiv.network";
 export const RPC_WS = "wss://rpc.tiramisu.db-chain.testnet.arkiv.network";
@@ -65,13 +66,14 @@ async function doWrite(signingKey: Hex, contentKey: CryptoKey, entry: Omit<Entry
 
   const creates = [];
   let full: EntryV1 = { ...entry };
+  const entryKeyRaw = newEntryKeyRaw();
   if (photo && photoKey) {
-    const sealedPhoto = await seal(contentKey, photo.bytes, aad("photo", photoKey.key, 0), false);
+    const sealedPhoto = await seal(await importEntryKey(entryKeyRaw), photo.bytes, aad("photo", photoKey.key, 0), false);
     if (sealedPhoto.length > MAX_PHOTO_BYTES + 64) throw new Error("photo too large after compression");
     full = { ...full, photo: { mime: photo.mime, size: photo.bytes.length, sha256: await sha256Hex(photo.bytes), parts: [photoKey.key] } };
     creates.push({ payload: sealedPhoto, contentType: "application/octet-stream" as const, attributes: { app: APP, kind: "photo", v: 1, part: 0, of: 1 }, expires, flags, salt: photoKey.salt });
   }
-  const sealedEntry = await sealEntry(contentKey, full, entryKey.key);
+  const sealedEntry = await sealEntryV2(contentKey, entryKeyRaw, full, entryKey.key);
   creates.unshift({ payload: sealedEntry, contentType: "application/octet-stream" as const, attributes: { app: APP, kind: "entry", v: 1 }, expires, flags, salt: entryKey.salt });
   const keys = photo && photoKey ? [entryKey.key, photoKey.key] : [entryKey.key];
 
@@ -88,8 +90,11 @@ async function doWrite(signingKey: Hex, contentKey: CryptoKey, entry: Omit<Entry
 export type JournalItem = {
   key: Hex;
   entry: EntryV1 | null;
-  /** Set when the payload could not be opened with this key. */
+  /** Set when the payload could not be opened with this access. */
   unreadable?: true;
+  /** The key that opened this entry (format 2), used for its photo and for sharing it. */
+  entryKey?: CryptoKey | null;
+  entryKeyRaw?: Uint8Array | null;
   creator: Hex;
   owner: Hex;
   createdAtBlock: bigint;
@@ -100,11 +105,14 @@ export type JournalItem = {
 const SELECT = { key: true, creator: true, owner: true, createdAt: true, expiresAt: true, creationFlags: true, payload: true } as const;
 
 /** Every entry written by this journal address, decrypted, oldest first. */
-export async function listEntries(address: Hex, contentKey: CryptoKey | null): Promise<JournalItem[]> {
+export type AccessArg = Access | CryptoKey | null;
+const toAccess = (a: AccessArg): Access => (a && "type" in (a as object) && (a as CryptoKey).algorithm ? { contentKey: a as CryptoKey } : ((a as Access | null) ?? {}));
+
+export async function listEntries(address: Hex, access: AccessArg): Promise<JournalItem[]> {
   const out: JournalItem[] = [];
   let page = await withTimeout(publicClient.select(SELECT).where([eq("app", APP), eq("kind", "entry")]).createdBy(address).limit(100).fetch(), "reading the journal");
   for (;;) {
-    for (const e of page.entities) out.push(await toItem(e, contentKey));
+    for (const e of page.entities) out.push(await toItem(e, toAccess(access)));
     if (!page.hasNextPage()) break;
     page = await withTimeout(page.next(), "reading the next page");
   }
@@ -113,13 +121,18 @@ export async function listEntries(address: Hex, contentKey: CryptoKey | null): P
 
 type Selected = { key: Hex; creator: Hex; owner: Hex; createdAt: bigint; expiresAt: bigint; creationFlags: { permissionlessExtension: boolean }; payload: Uint8Array };
 
-async function toItem(e: Selected, contentKey: CryptoKey | null): Promise<JournalItem> {
+async function toItem(e: Selected, access: Access): Promise<JournalItem> {
   let entry: EntryV1 | null = null;
   let unreadable: true | undefined;
-  if (contentKey) {
-    try { entry = await openEntry(contentKey, e.payload, e.key); } catch { unreadable = true; }
+  let entryKey: CryptoKey | null = null;
+  let entryKeyRaw: Uint8Array | null = null;
+  if (access.contentKey || access.shared?.size) {
+    try {
+      const r = await openEntryAny(e.payload, e.key, access);
+      entry = r.entry; entryKey = r.entryKey ?? access.contentKey ?? null; entryKeyRaw = r.entryKeyRaw;
+    } catch { unreadable = true; }
   }
-  return { key: e.key, entry, unreadable, creator: e.creator, owner: e.owner, createdAtBlock: e.createdAt, expiresAtBlock: e.expiresAt, permissionlessExtension: e.creationFlags.permissionlessExtension };
+  return { key: e.key, entry, unreadable, entryKey, entryKeyRaw, creator: e.creator, owner: e.owner, createdAtBlock: e.createdAt, expiresAtBlock: e.expiresAt, permissionlessExtension: e.creationFlags.permissionlessExtension };
 }
 
 /** How many entries carry our attributes but were written by some other wallet. */
@@ -128,9 +141,10 @@ export async function countForeignEntries(address: Hex): Promise<number> {
   return page.entities.filter((e) => e.creator.toLowerCase() !== address.toLowerCase()).length;
 }
 
-export async function loadPhoto(contentKey: CryptoKey, photoKey: Hex, mime: string): Promise<Blob> {
+/** `key` is the entry key that opened the entry (or the content key for format 1 entries). */
+export async function loadPhoto(key: CryptoKey, photoKey: Hex, mime: string): Promise<Blob> {
   const e = await withTimeout(publicClient.getEntity(photoKey), "loading the photo");
-  const bytes = await open(contentKey, e.payload as Uint8Array, aad("photo", photoKey, 0), false);
+  const bytes = await open(key, e.payload as Uint8Array, aad("photo", photoKey, 0), false);
   return new Blob([bytes as Uint8Array<ArrayBuffer>], { type: mime });
 }
 
@@ -160,9 +174,9 @@ export function watchJournal(address: Hex, onNew: (key: Hex) => void, onError?: 
   });
 }
 
-export async function getOne(key: Hex, contentKey: CryptoKey | null): Promise<JournalItem> {
+export async function getOne(key: Hex, access: AccessArg): Promise<JournalItem> {
   const e = await withTimeout(publicClient.getEntity(key), "reading the entry");
-  return toItem({ key, creator: e.creator as Hex, owner: e.owner as Hex, createdAt: e.createdAt as bigint, expiresAt: e.expiresAt as bigint, creationFlags: e.creationFlags as { permissionlessExtension: boolean }, payload: e.payload as Uint8Array }, contentKey);
+  return toItem({ key, creator: e.creator as Hex, owner: e.owner as Hex, createdAt: e.createdAt as bigint, expiresAt: e.expiresAt as bigint, creationFlags: e.creationFlags as { permissionlessExtension: boolean }, payload: e.payload as Uint8Array }, toAccess(access));
 }
 
 export async function balanceOf(address: Hex): Promise<bigint> {

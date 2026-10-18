@@ -1,10 +1,10 @@
-import { balanceOf, blockTime, getOne, LIFETIMES, writeEntry, type LifetimeYears } from "../arkiv/journal";
+import { blockTime, getOne, LIFETIMES, writeEntry, type LifetimeYears } from "../arkiv/journal";
 import { CATEGORIES, type Category } from "../lib";
 import { getSession } from "../session";
 import { CATEGORY_LABELS, errText, fmtTime, h, go } from "./dom";
 import { preparePhoto } from "./photo";
+import { ensureFunded } from "./fund";
 
-const MIN_BALANCE = 2_000_000_000_000_000n; // 0.002 GLM
 const MAX_TEXT = 8000;
 
 function localNow(): string {
@@ -13,7 +13,6 @@ function localNow(): string {
   return d.toISOString().slice(0, 16);
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function renderWrite(app: HTMLElement): () => void {
   const s = getSession();
@@ -76,30 +75,7 @@ export function renderWrite(app: HTMLElement): () => void {
         status.textContent = "Preparing your photo...";
         prepared = await preparePhoto(file);
       }
-      if ((await balanceOf(s.address)) < MIN_BALANCE) {
-        status.textContent = "Preparing your journal...";
-        const res = await fetch("/api/fund", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ address: s.address }),
-        });
-        let data: { error?: string } = {};
-        try {
-          data = (await res.json()) as { error?: string };
-        } catch {
-          /* no body */
-        }
-        if (!res.ok || data.error) throw new Error(data.error ?? "Could not prepare your journal. Please try again later.");
-        let funded = false;
-        for (let i = 0; i < 20; i++) {
-          if ((await balanceOf(s.address)) >= MIN_BALANCE) {
-            funded = true;
-            break;
-          }
-          await sleep(3000);
-        }
-        if (!funded) throw new Error("Preparing your journal is taking longer than expected. Nothing was written. Please try again in a minute.");
-      }
+      await ensureFunded(s.address, (m) => (status.textContent = m));
       status.textContent = "Saving...";
       const r = await writeEntry(
         s.signingKey,
