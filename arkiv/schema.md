@@ -88,6 +88,14 @@ node scripts/verify.mjs
 
 Expected output (abridged): four entries for `0x45259EADD9aBa97e0BC51f74ca2B7D2b90d91Fa7`, written about two minutes apart, each "owner burn address, readonly true"; one with "extendable false"; the first with a 3.0 year lifetime after another wallet kept it a year longer; "Carry the journal's label: 5. Of those, written by another wallet (planted, rejected by the app): 1"; and "Extension … was sent by 0x2d43… (not the journal: true)".
 
+## Reading it without the SDK
+
+`node scripts/independent-check.mjs` is a second client written only from this document: no Arkiv SDK, no viem, no packages. It sends `arkiv_query` with the journal filter `app = str('safejournal') AND kind = str('entry') AND $creator = addr(<journal>)`, reads each entity with `arkiv_getEntity` (which reports no query cost), takes the write time from `eth_getBlockByNumber` and the creating transaction from `eth_getLogs` with topics `[keccak256("EntityCreated(bytes32,address,uint64,uint8)"), <entity key>]`, then opens the entries with WebCrypto. Pass any share link to open only what it unlocks:
+
+```bash
+node scripts/independent-check.mjs "https://safe-journal-seven.vercel.app/#/lawyer?a=0x…&s=…"
+```
+
 ## Keys (how to build your own reader)
 
 - Normalisation: `NFKC`, trim; if there are two or more words and every word is on the BIP39 English word list, lower case and single spaces (so capitals and extra spaces do not change the journal).

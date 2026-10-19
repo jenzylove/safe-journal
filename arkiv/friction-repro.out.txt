@@ -1,0 +1,14 @@
+SDK @arkiv-network/sdk 0.8.1, Tiramisu https://rpc.tiramisu.db-chain.testnet.arkiv.network, 2026-10-19T13:21:06.423Z
+
+F1   watchEntityEvents handlers: onEntityCreated, onEntityPatched, onExpiryExtended, onOwnershipTransferred, onEntityDeleted, onEvent, onError. Expiry handler present: false
+F2   typeof walletClient.predictEntityKeys = undefined, typeof publicClient.predictEntityKeys = function
+F6   getEntity fields: key, owner, creator, createdAt, updatedAt, expiresAt, creationFlags, contentType, payload, attributeSchema, attributes. A creating transaction field: false
+F8   attributes come back as {"app":{"type":"str","value":"safejournal"},"journal":{"type":"str","value":"0x45259eadd9aba97e0bc51f74ca2b7d2b90d91fa7"},"kind":{"type":"str","value":"entry"},"v":{"type":"i32","value":1}}
+F15  SDK getEntity sent: arkiv_query (the node also serves arkiv_getEntity, which the SDK does not use)
+F14  EntityCreated args: entityKey, owner, expiresAt, creationFlags. owner on the event = 0x45259EADD9aBa97e0BC51f74ca2B7D2b90d91Fa7 (the journal); owner now = 0x000000000000000000000000000000000000dEaD (handed off in the same tx 0x82465cb17f3b23e0218d07d63fa4be491f10a723171452fbfbad6f6a7a9dfe70)
+F15  valid query                                  HTTP 200, arkiv-cost 100, answered
+F15  query with a syntax error                    HTTP 200, arkiv-cost 100, error: expected a comparison operator (= < <= > >= STARTSWITH)
+F15  query with an unknown option                 HTTP 200, arkiv-cost 100, error: invalid options param: ErrorObject { code: InvalidParams, message: "In
+F15  query with an untyped hex literal            HTTP 200, arkiv-cost 100, error: a hex literal must carry its type — write addr(0x…), key(0x…), bytes32
+F15  arkiv_getEntity (same entity)                HTTP 200, arkiv-cost none, answered
+F15  arkiv_getEntityCount                         HTTP 200, arkiv-cost none, answered

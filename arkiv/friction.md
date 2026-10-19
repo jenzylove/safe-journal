@@ -2,12 +2,14 @@
 
 Arkiv surfaces used while building Safe Journal. SDK `@arkiv-network/sdk` 0.8.1, Tiramisu testnet (chain 7738577). Each item: expected, actual, steps to reproduce, what would fix it. Kept while building; entries are added as they happen.
 
+Every item that only reads (F1, F2, F6, F8, F14, F15) reproduces against the live node in one command: `node scripts/friction-repro.mjs` (no key, no GLM; last output in `arkiv/friction-repro.out.txt`). Items that write need a funded key and have their own scripts in `spikes/`.
+
 ## F1. No event when an entity expires
 
 - **Surface:** TypeScript SDK, `watchEntityEvents`
 - **Expected:** a handler for expiry, since Entity Expiration is a core primitive.
 - **Actual:** `WatchEntityEventsParameters` in 0.8.1 offers `onEntityCreated`, `onEntityPatched`, `onExpiryExtended`, `onOwnershipTransferred`, `onEntityDeleted` and `onEvent`. The `EntityDeletedEvent` doc comment reads "An entity was deleted by its owner, before its expiry", so expiry emits nothing.
-- **Repro:** `npm pack @arkiv-network/sdk@0.8.1`, open `dist/index-*.d.ts`, read `WatchEntityEventsParameters` and `EntityDeletedEvent`.
+- **Repro:** `node scripts/friction-repro.mjs` (no key, no GLM; last output in `arkiv/friction-repro.out.txt`), line F1. By hand: `npm pack @arkiv-network/sdk@0.8.1`, open `dist/index-*.d.ts`, read `WatchEntityEventsParameters` and `EntityDeletedEvent`.
 - **Fix:** an `onEntityExpired` event, or a documented pattern for detecting expiry from the head block.
 
 ## F2. `predictEntityKeys` is on the public client, not the wallet client
@@ -15,7 +17,7 @@ Arkiv surfaces used while building Safe Journal. SDK `@arkiv-network/sdk` 0.8.1,
 - **Surface:** TypeScript SDK
 - **Expected:** the wallet client, which signs the batch, can predict the keys its own batch will mint (the doc comment's example calls `client.predictEntityKeys` next to `client.executeBatch`).
 - **Actual:** `typeof walletClient.predictEntityKeys` is `undefined`; `typeof publicClient.predictEntityKeys` is `function`. Calling it on the public client with `owner: account.address` returned keys that matched the batch exactly.
-- **Repro:** SDK 0.8.1, `createWalletClient({ chain: tiramisu, transport: http(), account })`, log `typeof client.predictEntityKeys`. Script: `spikes/spike1-batch-ownership.mjs`.
+- **Repro:** SDK 0.8.1, `createWalletClient({ chain: tiramisu, transport: http(), account })`, log `typeof client.predictEntityKeys`. Scripts: `node scripts/friction-repro.mjs` (no key, no GLM; last output in `arkiv/friction-repro.out.txt`), line F2, and `spikes/spike1-batch-ownership.mjs`.
 - **Fix:** expose it on the wallet client too, or change the doc example to use the public client.
 
 ## F3. A 127 KB payload fails with the same message as an empty wallet
@@ -46,7 +48,7 @@ Arkiv surfaces used while building Safe Journal. SDK `@arkiv-network/sdk` 0.8.1,
 - **Surface:** `getEntity`, `select()` (SDK 0.8.1)
 - **Expected:** a `createdTx` (or similar) field next to `createdAt`, since "show the creating transaction" is how a judge, a lawyer or an auditor checks a record.
 - **Actual:** entities carry `createdAt` (a block number) only. We recover the hash with `getLogs({ event: EntityCreated, args: { entityKey }, fromBlock: createdAt, toBlock: createdAt })`, using `ENTITY_EVENTS_ABI` from the SDK and no contract address. It works (the integration test asserts the recovered hash equals the batch's `txHash`), but it is one extra RPC call per entry, which adds up in a long timeline.
-- **Repro:** `CHAIN=1 npx vitest run src/arkiv/journal.chain.test.ts`; see `creationTx` in `src/arkiv/journal.ts`.
+- **Repro:** `node scripts/friction-repro.mjs` (no key, no GLM; last output in `arkiv/friction-repro.out.txt`), line F6 (lists the fields an entity carries); `CHAIN=1 npx vitest run src/arkiv/journal.chain.test.ts` checks the recovered hash; see `creationTx` in `src/arkiv/journal.ts`.
 - **Fix:** return the creating transaction hash on the entity, or document the `getLogs` pattern next to `createdAt`.
 
 ## F7. Refused writes leave no on-chain trace to point at
@@ -62,7 +64,7 @@ Arkiv surfaces used while building Safe Journal. SDK `@arkiv-network/sdk` 0.8.1,
 - **Surface:** `getEntity(key).attributes`
 - **Expected:** the same shape passed at create time (`{ app: "safejournal", v: 1 }`).
 - **Actual:** `{ app: { type: "str", value: "safejournal" }, kind: { type: "str", value: "entry" }, v: { type: "i32", value: 1 } }`. Our first proof page code assumed an array and failed to typecheck.
-- **Repro:** `getEntity("0x7349771437ee9fba3aef2f3fe823453256a27074690d3b080dd0489c17766d25")` on Tiramisu, log `attributes`.
+- **Repro:** `node scripts/friction-repro.mjs` (no key, no GLM; last output in `arkiv/friction-repro.out.txt`), line F8, or `getEntity("0x7349771437ee9fba3aef2f3fe823453256a27074690d3b080dd0489c17766d25")` on Tiramisu and log `attributes`.
 - **Fix:** a short "reading attributes back" example in the README.
 
 ## F9. Tested path that worked: browser-only writes from a passphrase-derived key
@@ -78,7 +80,7 @@ Arkiv surfaces used while building Safe Journal. SDK `@arkiv-network/sdk` 0.8.1,
 - **Versions:** SDK 0.8.1, viem 2.x, Tiramisu, 18 Oct 2026
 - **Expected:** a documented per connection budget, and a query that fails fast with a clear "budget used, resets in N minutes" error.
 - **Actual:** after a few hours of normal end to end testing from one connection (each test opens journals, lists entries, renders the proof page), every `arkiv_query` returned `429` with body `ANON_COST_LIMITED` and `retry-after: 1952` (seconds), then 470 a little later. `eth_blockNumber` still answered `200`. With viem's default retries the first symptom in the app was a screen stuck on "Reading the journal" rather than an error.
-- **Repro:** `curl -s -D - -X POST https://rpc.tiramisu.db-chain.testnet.arkiv.network -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"arkiv_query","params":["app = \"safejournal\"",{"resultsPerPage":"0x1"}]}'` repeated from one connection until the budget is spent; read `retry-after`.
+- **Repro:** `curl -s -D - -X POST https://rpc.tiramisu.db-chain.testnet.arkiv.network -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"arkiv_query","params":["app = str('"'"'safejournal'"'"')",{"limit":"0x1"}]}'` repeated from one connection until the budget is spent; read `arkiv-cost` (100 per call) and, once spent, `retry-after`.
 - **What we did:** `retryCount: 1`, an `onFetchResponse` hook that reads `retry-after`, a 60 second in tab cache of identical queries, and a plain "Arkiv is limiting reads from this connection for about N minutes" message (`src/arkiv/journal.ts`).
 - **Fix:** document the budget and the cost of one query next to the RPC URL, and have the SDK throw a typed rate limit error carrying `retry-after`.
 - **Upstream:** also reported as [reported-issues #17](https://github.com/Arkiv-Network/reported-issues/issues/17) (keyless query budget undocumented, SDK hangs on 429). Open as of 18 Oct 2026.
@@ -106,7 +108,7 @@ Arkiv surfaces used while building Safe Journal. SDK `@arkiv-network/sdk` 0.8.1,
 - **Surface:** creation flags, `deleteEntity`, `patchEntity`
 - **Versions:** SDK 0.8.1, Tiramisu, 18 Oct 2026
 - **Expected:** a flag that makes an entity permanent until it expires.
-- **Actual:** on an entity created with `readonly: true` and still owned by its creator, `patchEntity` is refused with a clear message ("was created readonly, so its contents can never change. Its expiry can still be extended, and it can be transferred or deleted"), but `deleteEntity` by the owner **succeeds** (tx `0x92832f2cac3a0f6147f147451a8a5a5b7a2fe4c8a801ea202b7cb1fc1ca1f308`, then `getEntity` reports no live entity). So to make journal entries undeletable we set `readonly` and also hand ownership to `0x…dEaD` in the creating batch (spike 6, tx `0x947f3d957ba7a23db88edeb8c8bd0b923b35012175da2c88bcb72d31a69a5e67`; a stranger could still extend it because `permissionlessExtension` was set). Two other builders in this hack hit the same thing: 1888-Labs/Mandate friction item 2 and mohitt31/jalsaakshya friction item 9.
+- **Actual:** on an entity created with `readonly: true` and still owned by its creator, `patchEntity` is refused with a clear message ("was created readonly, so its contents can never change. Its expiry can still be extended, and it can be transferred or deleted"), but `deleteEntity` by the owner **succeeds** (tx `0x92832f2cac3a0f6147f147451a8a5a5b7a2fe4c8a801ea202b7cb1fc1ca1f308`, then `getEntity` reports no live entity). So to make journal entries undeletable we set `readonly` and also hand ownership to `0x…dEaD` in the creating batch (spike 6, tx `0x947f3d957ba7a23db88edeb8c8bd0b923b35012175da2c88bcb72d31a69a5e67`; a stranger could still extend it because `permissionlessExtension` was set).
 - **Repro:** `node spikes/spike7-readonly-delete.mjs` (output in `spikes/spike7.out.txt`) and `node spikes/spike6-readonly.mjs`.
 - **Fix:** say next to the flag that the owner can still delete, document the burn owner pattern, or add an "undeletable" flag.
 - **Upstream:** also requested in [reported-issues #21](https://github.com/Arkiv-Network/reported-issues/issues/21) (an "undeletable" creation flag, since readonly still lets the owner delete). Open as of 18 Oct 2026.
@@ -116,5 +118,16 @@ Arkiv surfaces used while building Safe Journal. SDK `@arkiv-network/sdk` 0.8.1,
 - **Surface:** `watchEntityEvents`
 - **Expected:** enough on the event to decide whether it matters without a read.
 - **Actual:** `EntityCreated` carries `owner` but not `creator` or attributes. Because we hand entries to the burn address in the creating batch, we rely on `owner` on the create event still being the journal (the handoff arrives as a separate `OwnershipTransferred` event), then fetch only matching entities. Without that ordering detail a live view would need one read per event chain wide.
-- **Repro:** `node spikes/spike5-live-events.mjs` and look at the event fields.
+- **Repro:** `node scripts/friction-repro.mjs` (no key, no GLM; last output in `arkiv/friction-repro.out.txt`), line F14 (decodes the creating log of a demo entry: `entityKey, owner, expiresAt, creationFlags`, with `owner` still the journal although the entry now belongs to the burn address), and `node spikes/spike5-live-events.mjs` for the live socket.
 - **Fix:** add `creator` (and optionally attributes) to `EntityCreated`.
+
+## F15. Every `arkiv_query` is billed 100, even one the node rejects
+
+- **Surface:** public JSON-RPC (`arkiv_query`, `arkiv_getEntity`), TypeScript SDK `getEntity`
+- **Versions:** SDK 0.8.1, Tiramisu, 19 Oct 2026
+- **Expected:** a query the node refuses before running it (a syntax error, an unknown option) costs nothing, and reading one entity by key uses the cheapest call.
+- **Actual:** the node answers `arkiv-cost: 100` for a valid query and for three kinds of rejected ones: a syntax error, an unknown option (`resultsPerPage`, which older examples and our own first repro used), and an untyped hex literal (`$key = 0x…` instead of `key(0x…)`). While learning the query language every mistake spends the same budget as a real read, which is how a builder reaches the lockout in F10. Separately, the SDK sends `getEntity` as an `arkiv_query`, while the node's own `arkiv_getEntity` returns the same entity with no cost header.
+- **Repro:** `node scripts/friction-repro.mjs` (no key, no GLM; last output in `arkiv/friction-repro.out.txt`), lines F15.
+- **What we did:** `scripts/independent-check.mjs` reads and opens a whole journal over plain JSON-RPC with two `arkiv_query` calls and `arkiv_getEntity` for every entity: query cost 200 for the demo journal, where the same reads through the SDK's `getEntity` cost 600.
+- **Fix:** do not bill a query the node rejects at parse time; route the SDK's `getEntity` to `arkiv_getEntity`.
+- **Upstream:** the `getEntity` half is also reported as [reported-issues #18](https://github.com/Arkiv-Network/reported-issues/issues/18). Billing for rejected queries was not reported as of 19 Oct 2026.

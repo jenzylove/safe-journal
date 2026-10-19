@@ -33,6 +33,8 @@ Everyone who supports people living with abuse gives the same advice: write down
 | Reproduce it from a terminal | `npm install && node scripts/verify.mjs` |
 | The same app on a second, independent host (GitHub Pages, no server of ours) | [jenzylove.github.io/safe-journal](https://jenzylove.github.io/safe-journal/) |
 | Read a journal with no website at all | [reader/safe-journal-reader.html](reader/safe-journal-reader.html) |
+| Read and open a journal with no SDK at all, from the schema alone (plain JSON-RPC) | `node scripts/independent-check.mjs` |
+| Reproduce the friction report against the live node | `node scripts/friction-repro.mjs` |
 | Friction report | [arkiv/friction.md](arkiv/friction.md) |
 | Build log, spikes, PRD | [docs/](docs/) |
 
@@ -52,7 +54,7 @@ About one in three women worldwide has experienced physical or sexual violence, 
 
 **Censorship Resistance.** *Who is cut off today:* survivors whose evidence app shuts down or is taken offline; one shut down in 2023 and told its users to move their data out themselves. *What changes on day one:* the journal is read straight from an Arkiv node. The same app also runs as a mirror on GitHub Pages, which opens the demo journal contacting only github.io and the Arkiv node, and a one file reader can point at any node. No server of ours is needed to read, and anyone can fund a journal from the public faucet if our funding endpoint is gone.
 
-**Open Source.** *Who needs it open:* evidence is only trusted if anyone can check how it was made. A survivor, a lawyer, a court or an advocacy group should be able to verify the format, the encryption and the proofs without trusting us. *What changes on day one:* the code is MIT; [arkiv/schema.md](arkiv/schema.md) documents the entity types, the four public labels, lifetimes, the exact queries, the key derivation and the payload and share link formats, so anyone can write their own reader or court export; the [one file reader](reader/safe-journal-reader.html) opens any journal from any Arkiv node; and `scripts/verify.mjs` reproduces every claim from a terminal with the same queries the app runs.
+**Open Source.** *Who needs it open:* evidence is only trusted if anyone can check how it was made. A survivor, a lawyer, a court or an advocacy group should be able to verify the format, the encryption and the proofs without trusting us. *What changes on day one:* the code is MIT; [arkiv/schema.md](arkiv/schema.md) documents the entity types, the four public labels, lifetimes, the exact queries, the key derivation and the payload and share link formats, so anyone can write their own reader or court export; the [one file reader](reader/safe-journal-reader.html) opens any journal from any Arkiv node; `scripts/verify.mjs` reproduces every claim from a terminal with the same queries the app runs; and `scripts/independent-check.mjs` proves the schema is complete: with no SDK and no packages, only plain JSON-RPC and WebCrypto, it finds, checks and opens the demo journal from what `arkiv/schema.md` says.
 
 ## How it works
 
